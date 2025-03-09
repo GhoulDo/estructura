@@ -1,14 +1,11 @@
 package com.peluqueria.estructura.config;
 
-
 import com.peluqueria.estructura.security.JwtAuthenticationEntryPoint;
-import com.peluqueria.estructura.security.JwtUtil;
+import com.peluqueria.estructura.config.JwtAuthenticationFilter;
 import com.peluqueria.estructura.service.UsuarioService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.ProviderManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -39,6 +36,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
+                .requestMatchers("/api/clientes/**").hasRole("ADMIN")
+                .requestMatchers("/api/mascotas/**").authenticated()
+                .requestMatchers("/api/productos/**").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))

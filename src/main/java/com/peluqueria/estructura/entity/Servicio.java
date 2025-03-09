@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Entity
-@Table(name = "servicios")
+@Table(name = "servicios") // Asegúrate de que el nombre de la tabla sea correcto
 public class Servicio {
 
     @Id

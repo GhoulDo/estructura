@@ -1,6 +1,5 @@
 package com.peluqueria.estructura.service;
 
-
 import com.peluqueria.estructura.entity.Servicio;
 import com.peluqueria.estructura.repository.ServicioRepository;
 import org.springframework.stereotype.Service;
@@ -31,5 +30,13 @@ public class ServicioService {
 
     public void eliminarServicio(Long id) {
         servicioRepository.deleteById(id);
+    }
+
+    public List<Servicio> getAllServicios() {
+        return servicioRepository.findAll();
+    }
+
+    public Servicio createServicio(Servicio servicio) {
+        return servicioRepository.save(servicio);
     }
 }

@@ -32,4 +32,16 @@ public class FacturaService {
     public void eliminarFactura(Long id) {
         facturaRepository.deleteById(id);
     }
+
+    public List<Factura> getAllFacturas() {
+        return facturaRepository.findAll();
+    }
+
+    public Factura getFacturaById(Long id) {
+        return facturaRepository.findById(id).orElseThrow(() -> new RuntimeException("Factura no encontrada"));
+    }
+
+    public Factura createFactura(Factura factura) {
+        return facturaRepository.save(factura);
+    }
 }

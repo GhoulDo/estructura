@@ -1,7 +1,5 @@
 package com.peluqueria.estructura.service;
 
-
-
 import com.peluqueria.estructura.entity.Cita;
 import com.peluqueria.estructura.repository.CitaRepository;
 import org.springframework.stereotype.Service;
@@ -18,20 +16,24 @@ public class CitaService {
         this.citaRepository = citaRepository;
     }
 
-    public List<Cita> listarCitas() {
+    public List<Cita> getAllCitas() {
         return citaRepository.findAll();
     }
 
-    public Optional<Cita> obtenerCitaPorId(Long id) {
+    public Optional<Cita> getCitaById(Long id) {
         return citaRepository.findById(id);
     }
 
-    public Cita guardarCita(Cita cita) {
+    public Cita createCita(Cita cita) {
         return citaRepository.save(cita);
     }
 
-    public void eliminarCita(Long id) {
+    public void deleteCita(Long id) {
         citaRepository.deleteById(id);
+    }
+
+    public List<Cita> getCitasByUsuarioId(Long usuarioId) {
+        return citaRepository.findByMascotaClienteUsuarioId(usuarioId);
     }
 }
 

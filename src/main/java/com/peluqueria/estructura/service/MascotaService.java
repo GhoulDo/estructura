@@ -1,7 +1,5 @@
 package com.peluqueria.estructura.service;
 
-
-
 import com.peluqueria.estructura.entity.Mascota;
 import com.peluqueria.estructura.repository.MascotaRepository;
 import org.springframework.stereotype.Service;
@@ -18,12 +16,16 @@ public class MascotaService {
         this.mascotaRepository = mascotaRepository;
     }
 
-    public List<Mascota> listarMascotas() {
+    public List<Mascota> getAllMascotas() {
         return mascotaRepository.findAll();
     }
 
     public Optional<Mascota> obtenerMascotaPorId(Long id) {
         return mascotaRepository.findById(id);
+    }
+
+    public Mascota createMascota(Mascota mascota) {
+        return mascotaRepository.save(mascota);
     }
 
     public Mascota guardarMascota(Mascota mascota) {
@@ -32,6 +34,14 @@ public class MascotaService {
 
     public void eliminarMascota(Long id) {
         mascotaRepository.deleteById(id);
+    }
+
+    public List<Mascota> getMascotasByClienteId(Long clienteId) {
+        return mascotaRepository.findByClienteId(clienteId);
+    }
+
+    public List<Mascota> getMascotasByUsuarioId(Long usuarioId) {
+        return mascotaRepository.findByClienteUsuarioId(usuarioId);
     }
 }
 

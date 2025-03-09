@@ -23,7 +23,7 @@ public class JwtService {
     }
 
     public boolean validateToken(String token, String username) { // 🔹 Corrección aquí
-        return jwtUtil.validateToken(token, username);
+        return jwtUtil.isTokenValid(token, username);
     }
 }
 
