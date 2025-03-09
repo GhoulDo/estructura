@@ -1,7 +1,5 @@
 package com.peluqueria.estructura.service;
 
-
-
 import com.peluqueria.estructura.entity.DetalleFactura;
 import com.peluqueria.estructura.repository.DetalleFacturaRepository;
 import org.springframework.stereotype.Service;
@@ -31,6 +29,22 @@ public class DetalleFacturaService {
     }
 
     public void eliminarDetalle(Long id) {
+        detalleFacturaRepository.deleteById(id);
+    }
+
+    public Optional<DetalleFactura> getDetalleById(Long id) {
+        return detalleFacturaRepository.findById(id);
+    }
+
+    public DetalleFactura createDetalle(DetalleFactura detalle) {
+        return detalleFacturaRepository.save(detalle);
+    }
+
+    public DetalleFactura updateDetalle(DetalleFactura detalle) {
+        return detalleFacturaRepository.save(detalle);
+    }
+
+    public void deleteDetalle(Long id) {
         detalleFacturaRepository.deleteById(id);
     }
 }

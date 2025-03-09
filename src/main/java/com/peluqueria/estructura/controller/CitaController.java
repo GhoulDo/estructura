@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -76,6 +78,12 @@ public class CitaController {
         } else {
             return ResponseEntity.status(403).body("No estás autorizado para eliminar esta cita.");
         }
+    }
+
+    @PostMapping("/registrar")
+    public ResponseEntity<String> registrarCita(@RequestBody Cita cita) {
+        String mensaje = citaService.registrarCita(cita.getMascota().getId(), cita.getServicio().getId(), cita.getFecha(), cita.getHora(), cita.getEstado());
+        return ResponseEntity.ok(mensaje);
     }
 }
 
