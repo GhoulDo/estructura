@@ -60,6 +60,9 @@ public class MascotaController {
         try {
             Usuario usuario = usuarioService.obtenerUsuarioPorUsername(authentication.getName()).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             Cliente cliente = clienteService.getClientesByUsuarioId(usuario.getId()).stream().findFirst().orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+            if (cliente.getUsuario() == null) {
+                throw new RuntimeException("El cliente no tiene un usuario asociado.");
+            }
             mascota.setCliente(cliente);
             return ResponseEntity.ok(mascotaService.createMascota(mascota));
         } catch (RuntimeException e) {

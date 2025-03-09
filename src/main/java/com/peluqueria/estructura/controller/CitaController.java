@@ -1,8 +1,10 @@
 package com.peluqueria.estructura.controller;
 
 import com.peluqueria.estructura.entity.Cita;
+import com.peluqueria.estructura.entity.Mascota;
 import com.peluqueria.estructura.entity.Usuario;
 import com.peluqueria.estructura.service.CitaService;
+import com.peluqueria.estructura.service.MascotaService;
 import com.peluqueria.estructura.service.UsuarioService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -16,10 +18,12 @@ public class CitaController {
 
     private final CitaService citaService;
     private final UsuarioService usuarioService;
+    private final MascotaService mascotaService;
 
-    public CitaController(CitaService citaService, UsuarioService usuarioService) {
+    public CitaController(CitaService citaService, UsuarioService usuarioService, MascotaService mascotaService) {
         this.citaService = citaService;
         this.usuarioService = usuarioService;
+        this.mascotaService = mascotaService;
     }
 
     @GetMapping
@@ -45,11 +49,20 @@ public class CitaController {
 
     @PostMapping
     public ResponseEntity<?> createCita(@RequestBody Cita cita, Authentication authentication) {
-        Usuario usuario = usuarioService.obtenerUsuarioPorUsername(authentication.getName()).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        if (usuario.getRol().equals("ADMIN") || cita.getMascota().getCliente().getUsuario().getId().equals(usuario.getId())) {
-            return ResponseEntity.ok(citaService.createCita(cita));
-        } else {
-            return ResponseEntity.status(403).body("No estás autorizado para crear esta cita.");
+        try {
+            Usuario usuario = usuarioService.obtenerUsuarioPorUsername(authentication.getName()).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            Mascota mascota = mascotaService.obtenerMascotaPorId(cita.getMascota().getId()).orElseThrow(() -> new RuntimeException("Mascota no encontrada"));
+            if (mascota.getCliente() == null || mascota.getCliente().getUsuario() == null) {
+                throw new RuntimeException("La mascota no tiene un cliente o usuario asociado.");
+            }
+            if (usuario.getRol().equals("ADMIN") || mascota.getCliente().getUsuario().getId().equals(usuario.getId())) {
+                cita.setMascota(mascota);
+                return ResponseEntity.ok(citaService.createCita(cita));
+            } else {
+                return ResponseEntity.status(403).body("No estás autorizado para crear esta cita.");
+            }
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
         }
     }
 
