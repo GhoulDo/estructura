@@ -1,6 +1,5 @@
 package com.peluqueria.estructura.controller;
 
-
 import com.peluqueria.estructura.entity.Factura;
 import com.peluqueria.estructura.service.FacturaService;
 import org.springframework.http.ResponseEntity;
