@@ -28,6 +28,16 @@ public class CitaService {
         return citaRepository.save(cita);
     }
 
+    public Cita updateCita(Long id, Cita cita) {
+        Cita existingCita = getCitaById(id);
+        existingCita.setFecha(cita.getFecha());
+        existingCita.setHora(cita.getHora());
+        existingCita.setEstado(cita.getEstado());
+        existingCita.setMascota(cita.getMascota());
+        existingCita.setServicio(cita.getServicio());
+        return citaRepository.save(existingCita);
+    }
+
     public void deleteCita(Long id) {
         citaRepository.deleteById(id);
     }

@@ -1,6 +1,5 @@
 package com.peluqueria.estructura.controller;
 
-
 import com.peluqueria.estructura.entity.Servicio;
 import com.peluqueria.estructura.service.ServicioService;
 import org.springframework.http.ResponseEntity;
@@ -21,11 +20,6 @@ public class ServicioController {
     @GetMapping
     public ResponseEntity<List<Servicio>> getAllServicios() {
         return ResponseEntity.ok(servicioService.getAllServicios());
-    }
-
-    @PostMapping
-    public ResponseEntity<Servicio> createServicio(@RequestBody Servicio servicio) {
-        return ResponseEntity.ok(servicioService.createServicio(servicio));
     }
 }
 

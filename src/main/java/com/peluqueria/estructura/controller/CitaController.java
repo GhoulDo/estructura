@@ -1,6 +1,5 @@
 package com.peluqueria.estructura.controller;
 
-
 import com.peluqueria.estructura.entity.Cita;
 import com.peluqueria.estructura.service.CitaService;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +30,11 @@ public class CitaController {
     @PostMapping
     public ResponseEntity<Cita> createCita(@RequestBody Cita cita) {
         return ResponseEntity.ok(citaService.createCita(cita));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Cita> updateCita(@PathVariable Long id, @RequestBody Cita cita) {
+        return ResponseEntity.ok(citaService.updateCita(id, cita));
     }
 
     @DeleteMapping("/{id}")

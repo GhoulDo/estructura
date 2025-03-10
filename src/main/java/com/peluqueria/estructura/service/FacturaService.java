@@ -5,6 +5,7 @@ import com.peluqueria.estructura.entity.Factura;
 import com.peluqueria.estructura.repository.FacturaRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,5 +44,12 @@ public class FacturaService {
 
     public Factura createFactura(Factura factura) {
         return facturaRepository.save(factura);
+    }
+
+    public BigDecimal calcularTotalFactura(Long facturaId) {
+        Factura factura = getFacturaById(facturaId);
+        return factura.getDetalles().stream()
+                .map(detalle -> detalle.getSubtotal())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

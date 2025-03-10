@@ -1,11 +1,11 @@
 package com.peluqueria.estructura.controller;
 
-
 import com.peluqueria.estructura.entity.Factura;
 import com.peluqueria.estructura.service.FacturaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -31,6 +31,11 @@ public class FacturaController {
     @PostMapping
     public ResponseEntity<Factura> createFactura(@RequestBody Factura factura) {
         return ResponseEntity.ok(facturaService.createFactura(factura));
+    }
+
+    @GetMapping("/{id}/total")
+    public ResponseEntity<BigDecimal> calcularTotalFactura(@PathVariable Long id) {
+        return ResponseEntity.ok(facturaService.calcularTotalFactura(id));
     }
 }
 
