@@ -34,9 +34,10 @@ public class UsuarioService implements UserDetailsService {
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
         
         // Importante: Spring Security espera roles con el prefijo ROLE_
-        if (usuario.getRol() != null && usuario.getRol().getNombre() != null) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().getNombre().toUpperCase()));
-        }
+        // Por esto:
+if (usuario.getRol() != null) {
+    authorities.add(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().toUpperCase()));
+}
         
         return new org.springframework.security.core.userdetails.User(
             usuario.getEmail(), 
