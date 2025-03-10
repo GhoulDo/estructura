@@ -34,11 +34,11 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/**").hasAnyRole("CLIENTE", "ADMIN")
-                .anyRequest().authenticated()
-            )
+    .requestMatchers("/api/auth/**").permitAll()
+    .requestMatchers("/api/admin/**").hasRole("ADMIN")
+    .requestMatchers("/api/**").hasAnyRole("CLIENTE", "ADMIN")
+    .anyRequest().authenticated()
+)
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

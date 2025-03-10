@@ -2,6 +2,7 @@ package com.peluqueria.estructura.service;
 
 import com.peluqueria.estructura.entity.Usuario;
 import com.peluqueria.estructura.repository.UsuarioRepository;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -28,7 +29,20 @@ public class UsuarioService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
-        return new org.springframework.security.core.userdetails.User(usuario.getEmail(), usuario.getPassword(), new ArrayList<>());
+        
+        // Crear autoridades basadas en el rol del usuario
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        
+        // Importante: Spring Security espera roles con el prefijo ROLE_
+        if (usuario.getRol() != null && usuario.getRol().getNombre() != null) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().getNombre().toUpperCase()));
+        }
+        
+        return new org.springframework.security.core.userdetails.User(
+            usuario.getEmail(), 
+            usuario.getPassword(), 
+            authorities
+        );
     }
 
     public List<Usuario> getAllUsuarios() {
@@ -43,5 +57,3 @@ public class UsuarioService implements UserDetailsService {
         usuarioRepository.deleteById(id);
     }
 }
-
-

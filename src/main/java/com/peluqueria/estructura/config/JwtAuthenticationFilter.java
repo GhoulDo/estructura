@@ -31,6 +31,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
         String authorizationHeader = request.getHeader("Authorization");
+        
+        // Log para debugging
+        logger.info("Processing request: " + request.getRequestURI());
 
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             chain.doFilter(request, response);
@@ -39,16 +42,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authorizationHeader.substring(7);
         String username = jwtUtil.extractUsername(token);
+        
+        logger.info("Token received for user: " + username);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = usuarioService.loadUserByUsername(username);
+            
+            // Log para ver las autoridades asignadas
+            logger.info("User authorities: " + userDetails.getAuthorities());
 
             if (jwtUtil.isTokenValid(token, userDetails.getUsername())) {
                 UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        new UsernamePasswordAuthenticationToken(
+                            userDetails, 
+                            null, 
+                            userDetails.getAuthorities()
+                        );
+                
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+                
+                logger.info("Authentication successful, user authenticated with authorities");
+            } else {
+                logger.warn("Token validation failed");
             }
         }
 
