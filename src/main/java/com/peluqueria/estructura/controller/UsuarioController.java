@@ -1,6 +1,5 @@
 package com.peluqueria.estructura.controller;
 
-
 import com.peluqueria.estructura.entity.Usuario;
 import com.peluqueria.estructura.service.UsuarioService;
 import org.springframework.http.ResponseEntity;

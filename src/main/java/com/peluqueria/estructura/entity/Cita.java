@@ -1,5 +1,6 @@
 package com.peluqueria.estructura.entity;
 
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,7 +10,7 @@ import java.time.LocalTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "citas") // Asegúrate de que el nombre de la tabla sea correcto
+@Table(name = "citas")
 public class Cita {
 
     @Id

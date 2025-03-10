@@ -1,13 +1,14 @@
 package com.peluqueria.estructura.entity;
 
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-@Entity
 @Getter
 @Setter
-@Table(name = "mascotas") // Asegúrate de que el nombre de la tabla sea correcto
+@Entity
+@Table(name = "mascotas")
 public class Mascota {
 
     @Id
@@ -15,7 +16,7 @@ public class Mascota {
     private Long id;
 
     private String nombre;
-    private String tipo;
+    private String tipo; // Antes especie
     private String raza;
     private int edad;
 

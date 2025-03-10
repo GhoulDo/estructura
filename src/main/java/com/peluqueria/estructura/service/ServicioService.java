@@ -39,8 +39,4 @@ public class ServicioService {
     public Servicio createServicio(Servicio servicio) {
         return servicioRepository.save(servicio);
     }
-
-    public Optional<Servicio> getServicioById(Long id) {
-        return servicioRepository.findById(id);
-    }
 }

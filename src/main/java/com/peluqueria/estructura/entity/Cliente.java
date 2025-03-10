@@ -1,13 +1,15 @@
 package com.peluqueria.estructura.entity;
 
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import java.util.List;
 
-@Entity
 @Getter
 @Setter
-@Table(name = "clientes") // Asegúrate de que el nombre de la tabla sea correcto
+@Entity
+@Table(name = "clientes")
 public class Cliente {
 
     @Id
@@ -19,8 +21,11 @@ public class Cliente {
     private String email;
     private String direccion;
 
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
+    @OneToOne
+    @JoinColumn(name = "usuario_id", referencedColumnName = "id")
     private Usuario usuario;
+
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL)
+    private List<Mascota> mascotas;
 }
 

@@ -5,7 +5,6 @@ import com.peluqueria.estructura.repository.ClienteRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ClienteService {
@@ -20,23 +19,24 @@ public class ClienteService {
         return clienteRepository.findAll();
     }
 
-    public Optional<Cliente> getClienteById(Long id) {
-        return clienteRepository.findById(id);
+    public Cliente getClienteById(Long id) {
+        return clienteRepository.findById(id).orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
     }
 
     public Cliente createCliente(Cliente cliente) {
         return clienteRepository.save(cliente);
     }
 
-    public Cliente guardarCliente(Cliente cliente) {
-        return clienteRepository.save(cliente);
+    public Cliente updateCliente(Long id, Cliente cliente) {
+        Cliente existingCliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        existingCliente.setNombre(cliente.getNombre());
+        existingCliente.setEmail(cliente.getEmail());
+        existingCliente.setTelefono(cliente.getTelefono());
+        return clienteRepository.save(existingCliente);
     }
 
-    public void eliminarCliente(Long id) {
+    public void deleteCliente(Long id) {
         clienteRepository.deleteById(id);
-    }
-
-    public List<Cliente> getClientesByUsuarioId(Long usuarioId) {
-        return clienteRepository.findByUsuarioId(usuarioId);
     }
 }

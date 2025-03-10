@@ -20,6 +20,17 @@ public class UsuarioService implements UserDetailsService {
         this.usuarioRepository = usuarioRepository;
     }
 
+    public Optional<Usuario> obtenerUsuarioPorUsername(String username) {
+        return usuarioRepository.findByUsername(username);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
+        return new org.springframework.security.core.userdetails.User(usuario.getEmail(), usuario.getPassword(), new ArrayList<>());
+    }
+
     public List<Usuario> getAllUsuarios() {
         return usuarioRepository.findAll();
     }
@@ -30,17 +41,6 @@ public class UsuarioService implements UserDetailsService {
 
     public void deleteUsuario(Long id) {
         usuarioRepository.deleteById(id);
-    }
-
-    public Optional<Usuario> obtenerUsuarioPorUsername(String username) {
-        return usuarioRepository.findByUsername(username);
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
-        return new org.springframework.security.core.userdetails.User(usuario.getEmail(), usuario.getPassword(), new ArrayList<>());
     }
 }
 

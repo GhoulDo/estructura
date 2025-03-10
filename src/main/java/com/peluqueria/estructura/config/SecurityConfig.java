@@ -36,13 +36,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
-                .requestMatchers("/api/clientes/**").hasRole("ADMIN")
-                .requestMatchers("/api/mascotas/**").authenticated()
-                .requestMatchers("/api/productos").permitAll()
-                .requestMatchers("/api/productos/**").hasRole("ADMIN")
-                .requestMatchers("/api/facturas/**").authenticated()
-                .requestMatchers("/api/servicios/**").authenticated()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))

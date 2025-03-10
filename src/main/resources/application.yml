@@ -1,3 +1,20 @@
+spring:
+  application:
+    name: estructura
+  datasource:
+    url: jdbc:postgresql://enciso-s-enterprice-8431.j77.aws-us-east-1.cockroachlabs.cloud:26257/peluqueria_perros?sslmode=require
+    username: jhoan
+    password: gW27EBIiOZHkV9BZGddAhg
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+server:
+  port: 3030
+
 jwt:
   secret: your_secure_secret_key_here_that_is_at_least_256_bits_long_1234567890abcdef
   expiration: 3600000

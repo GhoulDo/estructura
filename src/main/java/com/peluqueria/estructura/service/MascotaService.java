@@ -16,16 +16,12 @@ public class MascotaService {
         this.mascotaRepository = mascotaRepository;
     }
 
-    public List<Mascota> getAllMascotas() {
+    public List<Mascota> listarMascotas() {
         return mascotaRepository.findAll();
     }
 
     public Optional<Mascota> obtenerMascotaPorId(Long id) {
         return mascotaRepository.findById(id);
-    }
-
-    public Mascota createMascota(Mascota mascota) {
-        return mascotaRepository.save(mascota);
     }
 
     public Mascota guardarMascota(Mascota mascota) {
@@ -36,12 +32,12 @@ public class MascotaService {
         mascotaRepository.deleteById(id);
     }
 
-    public List<Mascota> getMascotasByClienteId(Long clienteId) {
-        return mascotaRepository.findByClienteId(clienteId);
+    public List<Mascota> getAllMascotas() {
+        return mascotaRepository.findAll();
     }
 
-    public List<Mascota> getMascotasByUsuarioId(Long usuarioId) {
-        return mascotaRepository.findByClienteUsuarioId(usuarioId);
+    public Mascota createMascota(Mascota mascota) {
+        return mascotaRepository.save(mascota);
     }
 }
 

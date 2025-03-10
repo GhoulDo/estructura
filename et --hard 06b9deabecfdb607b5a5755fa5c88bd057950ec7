@@ -1,0 +1,30 @@
+[33mcommit 2205841c95e2c12ae62f8f609db537858eac6fe9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: GhoulDo <joooohanenciso@gmail.com>
+Date:   Sun Mar 9 01:03:57 2025 -0500
+
+    Sirviendo todo
+
+[33mcommit 06b9deabecfdb607b5a5755fa5c88bd057950ec7[m
+Author: GhoulDo <joooohanenciso@gmail.com>
+Date:   Sat Mar 8 20:57:19 2025 -0500
+
+    citas hechas y funcionando
+
+[33mcommit d197cd1ab6aed5db97b975ab1d11706bd50b4610[m
+Author: GhoulDo <joooohanenciso@gmail.com>
+Date:   Sat Mar 8 20:30:13 2025 -0500
+
+    Mascotas funcionando , ruta"http://localhost:3030/api/mascotas
+    "
+
+[33mcommit 47f15881f1ace486f6941797e05c4ae807b28c5c[m
+Author: GhoulDo <joooohanenciso@gmail.com>
+Date:   Sat Mar 8 19:36:07 2025 -0500
+
+    Agregar clases y repositorios para la gestión de proyectos, servicios y citas; incluir configuración de JWT y dependencias necesarias.
+
+[33mcommit 80105105906e02ada7b09c3ef9aadd49e01a7418[m
+Author: GhoulDo <joooohanenciso@gmail.com>
+Date:   Sat Mar 8 15:22:34 2025 -0500
+
+    Agregar clases y repositorios básicos para la estructura del proyecto
