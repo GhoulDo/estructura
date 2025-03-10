@@ -13,8 +13,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
 public class AuthenticationService {
 
@@ -39,7 +37,7 @@ public class AuthenticationService {
 
     public AuthResponse login(AuthRequest request) {
         try {
-            // Autenticar con AuthenticationManager
+            // Autenticar con AuthenticationManager usando email
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
@@ -47,27 +45,42 @@ public class AuthenticationService {
             // Obtener UserDetails
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             
-            // Generar token con autoridades
-            String token = jwtUtil.generateToken(userDetails.getUsername(), userDetails.getAuthorities());
+            // IMPORTANTE: Buscar el username asociado al email para guardarlo en el token
+            Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            // Generar token con username (no email) y autoridades
+            String token = jwtUtil.generateToken(usuario.getUsername(), userDetails.getAuthorities());
             
             return new AuthResponse(token);
         } catch (Exception e) {
             // Log del error para debugging
             System.err.println("Error durante autenticación: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Credenciales inválidas", e);
         }
     }
 
     public void register(RegisterRequest request) {
         if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("El usuario ya existe");
+            throw new RuntimeException("El usuario ya existe con ese email");
+        }
+        
+        if (usuarioRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("El nombre de usuario ya está en uso");
         }
         
         Usuario usuario = new Usuario();
         usuario.setUsername(request.getUsername());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setEmail(request.getEmail());
-        usuario.setRol(request.getRol());
+        
+        // Normalizar el rol para evitar problemas de case-sensitivity
+        String rol = request.getRol().toUpperCase();
+        if (!rol.equals("ADMIN") && !rol.equals("CLIENTE")) {
+            rol = "CLIENTE";  // Valor por defecto si el rol no es válido
+        }
+        usuario.setRol(rol);
 
         usuarioRepository.save(usuario);
     }

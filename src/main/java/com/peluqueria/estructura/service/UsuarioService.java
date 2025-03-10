@@ -26,21 +26,32 @@ public class UsuarioService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
+    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
+        // Intenta buscar primero por email
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(usernameOrEmail);
+        
+        // Si no encuentra por email, intenta por username
+        if (!usuarioOpt.isPresent()) {
+            usuarioOpt = usuarioRepository.findByUsername(usernameOrEmail);
+        }
+        
+        Usuario usuario = usuarioOpt.orElseThrow(() -> 
+                new UsernameNotFoundException("Usuario no encontrado: " + usernameOrEmail));
         
         // Crear autoridades basadas en el rol del usuario
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
         
-        // Importante: Spring Security espera roles con el prefijo ROLE_
-        // Por esto:
-if (usuario.getRol() != null) {
-    authorities.add(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().toUpperCase()));
-}
+        // Asegurarse que el rol tenga el prefijo ROLE_
+        if (usuario.getRol() != null) {
+            String rol = usuario.getRol().toUpperCase();
+            if (!rol.startsWith("ROLE_")) {
+                rol = "ROLE_" + rol;
+            }
+            authorities.add(new SimpleGrantedAuthority(rol));
+        }
         
         return new org.springframework.security.core.userdetails.User(
-            usuario.getEmail(), 
+            usuario.getUsername(),  // Usar username en vez de email
             usuario.getPassword(), 
             authorities
         );

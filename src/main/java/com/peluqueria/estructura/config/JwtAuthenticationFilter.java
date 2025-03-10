@@ -28,14 +28,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain chain) throws ServletException, IOException {
-        String authorizationHeader = request.getHeader("Authorization");
+                                   HttpServletResponse response,
+                                   FilterChain chain) throws ServletException, IOException {
+        final String requestURI = request.getRequestURI();
+        final String method = request.getMethod();
         
         // Log para debugging
-        logger.info("Processing request: " + request.getRequestURI());
+        logger.info("Processing request: " + method + " " + requestURI);
+
+        // Si es una ruta pública, continuamos sin verificar
+        if (requestURI.startsWith("/api/auth/")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        String authorizationHeader = request.getHeader("Authorization");
 
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            logger.warn("No Authorization header or not Bearer token");
             chain.doFilter(request, response);
             return;
         }
@@ -46,25 +56,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         logger.info("Token received for user: " + username);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = usuarioService.loadUserByUsername(username);
-            
-            // Log para ver las autoridades asignadas
-            logger.info("User authorities: " + userDetails.getAuthorities());
+            try {
+                UserDetails userDetails = usuarioService.loadUserByUsername(username);
+                
+                // Log para ver las autoridades asignadas
+                logger.info("User authorities: " + userDetails.getAuthorities());
 
-            if (jwtUtil.isTokenValid(token, userDetails.getUsername())) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                            userDetails, 
-                            null, 
-                            userDetails.getAuthorities()
-                        );
-                
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-                
-                logger.info("Authentication successful, user authenticated with authorities");
-            } else {
-                logger.warn("Token validation failed");
+                if (jwtUtil.isTokenValid(token, userDetails.getUsername())) {
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                userDetails, 
+                                null, 
+                                userDetails.getAuthorities()
+                            );
+                    
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    
+                    logger.info("Authentication successful, user authenticated with authorities");
+                } else {
+                    logger.warn("Token validation failed");
+                }
+            } catch (Exception e) {
+                logger.error("Error authenticating user: " + e.getMessage(), e);
             }
         }
 
