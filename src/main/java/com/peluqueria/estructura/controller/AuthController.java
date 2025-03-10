@@ -1,6 +1,5 @@
 package com.peluqueria.estructura.controller;
 
-
 import com.peluqueria.estructura.dto.AuthRequest;
 import com.peluqueria.estructura.dto.AuthResponse;
 import com.peluqueria.estructura.dto.RegisterRequest;
