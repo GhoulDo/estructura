@@ -1,4 +1,5 @@
 package com.peluqueria.estructura.repository;
+
 import com.peluqueria.estructura.entity.Cita;
 import org.springframework.data.jpa.repository.JpaRepository;
 
