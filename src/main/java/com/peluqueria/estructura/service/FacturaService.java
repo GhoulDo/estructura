@@ -107,14 +107,12 @@ public class FacturaService {
         // Verificar acceso primero
         FacturaDTO factura = getFacturaById(facturaId, auth);
         
-        Factura facturaEntity = facturaRepository.findById(facturaId)
-                .orElseThrow(() -> new RuntimeException("Factura no encontrada"));
-        
-        BigDecimal total = facturaEntity.getDetalles().stream()
-                .map(detalle -> detalle.getSubtotal())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Llamar a la función en el repositorio para calcular el total
+        BigDecimal total = facturaRepository.calcularTotalFactura(facturaId);
         
         // Actualizar el total en la factura
+        Factura facturaEntity = facturaRepository.findById(facturaId)
+                .orElseThrow(() -> new RuntimeException("Factura no encontrada"));
         facturaEntity.setTotal(total);
         facturaRepository.save(facturaEntity);
         
