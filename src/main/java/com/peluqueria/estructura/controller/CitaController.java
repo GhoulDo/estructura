@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -69,5 +70,16 @@ public class CitaController {
     public ResponseEntity<Void> deleteCita(@PathVariable Long id) {
         citaService.deleteCita(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/validar")
+    public ResponseEntity<String> validarCita(
+        @RequestParam Long mascotaId, 
+        @RequestParam Long servicioId, 
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha, 
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime hora
+    ) {
+        String resultado = citaService.verificarDisponibilidadCita(mascotaId, servicioId, fecha, hora);
+        return ResponseEntity.ok(resultado);
     }
 }

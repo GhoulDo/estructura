@@ -6,6 +6,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -140,5 +141,9 @@ public class CitaService {
 
     public void deleteCita(Long id) {
         citaRepository.deleteById(id);
+    }
+
+    public String verificarDisponibilidadCita(Long mascotaId, Long servicioId, LocalDate fecha, LocalTime hora) {
+        return citaRepository.validarCita(mascotaId, servicioId, fecha, hora);
     }
 }
