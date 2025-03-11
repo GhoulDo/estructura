@@ -28,51 +28,49 @@ public class SecurityConfig {
         this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.usuarioService = usuarioService;
-    }
+        }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // Rutas públicas para autenticación
-                .requestMatchers("/api/auth/**").permitAll()
-                
-                // Permisos para servicios - permitir GET, PUT, PATCH para CLIENTE y ADMIN
-                .requestMatchers(HttpMethod.GET, "/api/servicios/**").hasAnyRole("CLIENTE", "ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/servicios/**").hasAnyRole("CLIENTE", "ADMIN")
-                .requestMatchers(HttpMethod.PATCH, "/api/servicios/**").hasAnyRole("CLIENTE", "ADMIN")
-                // Solo ADMIN puede realizar operaciones POST y DELETE
-                .requestMatchers(HttpMethod.POST, "/api/servicios/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/servicios/**").hasRole("ADMIN")
-                
-                // Permitir GET, PUT, PATCH para CLIENTE en todas las rutas API
-                .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("CLIENTE", "ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyRole("CLIENTE", "ADMIN")
-                .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyRole("CLIENTE", "ADMIN")
-                
-                // Permitir búsqueda por ID para CLIENTE (patrón específico)
-                .requestMatchers(HttpMethod.GET, "/api/**/[0-9]+").hasAnyRole("CLIENTE", "ADMIN")
-                
-                // Solo ADMIN puede usar POST y DELETE en las rutas API generales
-                .requestMatchers(HttpMethod.POST, "/api/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
-                
-                // Rutas específicas de admin
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                
-                // Cualquier otra solicitud requiere autenticación
-                .anyRequest().authenticated()
+            // Rutas públicas para autenticación
+            .requestMatchers("/api/auth/**").permitAll()
+            
+            // Permisos para servicios - permitir GET para CLIENTE y ADMIN
+            .requestMatchers(HttpMethod.GET, "/api/servicios/**").hasAnyRole("CLIENTE", "ADMIN")
+            // Solo ADMIN puede realizar operaciones POST, PUT, PATCH y DELETE
+            .requestMatchers(HttpMethod.POST, "/api/servicios/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/servicios/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.PATCH, "/api/servicios/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/servicios/**").hasRole("ADMIN")
+            
+            // Permitir operaciones GET para CLIENTE en facturas y detalles
+            .requestMatchers(HttpMethod.GET, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
+            
+            // Permitir modificaciones en facturas para ambos roles (la lógica de autorización
+            // se manejará en los servicios para limitar a los clientes a sus propias facturas)
+            .requestMatchers(HttpMethod.POST, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
+            
+            // Rutas específicas de admin
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
+            
+            // Cualquier otra solicitud requiere autenticación
+            .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
+        }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        @Bean
+        public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 
