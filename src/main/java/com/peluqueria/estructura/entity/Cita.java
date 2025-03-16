@@ -17,7 +17,7 @@ public class Cita {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "mascota_id")
+    @JoinColumn(name = "mascota_id")                                
     private Mascota mascota;
 
     @ManyToOne
