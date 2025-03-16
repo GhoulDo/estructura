@@ -49,15 +49,26 @@ public class SecurityConfig {
             // Permitir operaciones GET para CLIENTE en facturas y detalles
             .requestMatchers(HttpMethod.GET, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
             
-            // Permitir modificaciones en facturas para ambos roles (la lógica de autorización
-            // se manejará en los servicios para limitar a los clientes a sus propias facturas)
+            // Permitir modificaciones en facturas para ambos roles
             .requestMatchers(HttpMethod.POST, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
             .requestMatchers(HttpMethod.PUT, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
             .requestMatchers(HttpMethod.DELETE, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
             
+            // Permitir acceso a usuarios para ambos roles
+            .requestMatchers("/api/usuarios/**").hasAnyRole("CLIENTE", "ADMIN")
+            
+            // Permitir acceso a clientes para ambos roles
+            .requestMatchers("/api/clientes/**").hasAnyRole("CLIENTE", "ADMIN")
+            
+            // AÑADIDO: Permitir acceso a citas para ambos roles
+            .requestMatchers(HttpMethod.GET, "/api/citas/**").hasAnyRole("CLIENTE", "ADMIN")
+            .requestMatchers(HttpMethod.POST, "/api/citas/**").hasAnyRole("CLIENTE", "ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/citas/**").hasAnyRole("CLIENTE", "ADMIN")
+            .requestMatchers(HttpMethod.PATCH, "/api/citas/**").hasAnyRole("CLIENTE", "ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/citas/**").hasAnyRole("CLIENTE", "ADMIN")
+            
             // Rutas específicas de admin
             .requestMatchers("/api/admin/**").hasRole("ADMIN")
-            .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
             
             // Cualquier otra solicitud requiere autenticación
             .anyRequest().authenticated()
