@@ -97,6 +97,9 @@ public AuthenticationService(
         cliente.setUsuario(usuario);
         cliente.setNombre(request.getUsername()); // Usar username como nombre inicial
         cliente.setEmail(request.getEmail());     // Usar el mismo email
+        cliente.setTelefono(""); // Inicializar campo vacío
+        cliente.setDireccion(""); // Inicializar campo vacío
+        cliente.setMascotas(null); // Inicializar mascotas como null
         
         clienteRepository.save(cliente);
     }
