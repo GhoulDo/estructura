@@ -9,49 +9,47 @@ import com.peluqueria.estructura.entity.Producto;
 import com.peluqueria.estructura.entity.Servicio;
 import com.peluqueria.estructura.entity.Usuario;
 import com.peluqueria.estructura.repository.ClienteRepository;
-import com.peluqueria.estructura.repository.DetalleFacturaRepository;
 import com.peluqueria.estructura.repository.FacturaRepository;
 import com.peluqueria.estructura.repository.ProductoRepository;
 import com.peluqueria.estructura.repository.ServicioRepository;
 import com.peluqueria.estructura.repository.UsuarioRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class DetalleFacturaService {
 
-    private final DetalleFacturaRepository detalleFacturaRepository;
     private final FacturaRepository facturaRepository;
     private final ProductoRepository productoRepository;
     private final ServicioRepository servicioRepository;
     private final ClienteRepository clienteRepository;
     private final UsuarioRepository usuarioRepository;
-    private final FacturaService facturaService;
 
-    public DetalleFacturaService(DetalleFacturaRepository detalleFacturaRepository, 
-                               FacturaRepository facturaRepository,
+    @Autowired
+    public DetalleFacturaService(FacturaRepository facturaRepository,
                                ProductoRepository productoRepository,
                                ServicioRepository servicioRepository,
                                ClienteRepository clienteRepository,
-                               UsuarioRepository usuarioRepository,
-                               FacturaService facturaService) {
-        this.detalleFacturaRepository = detalleFacturaRepository;
+                               UsuarioRepository usuarioRepository) {
         this.facturaRepository = facturaRepository;
         this.productoRepository = productoRepository;
         this.servicioRepository = servicioRepository;
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
-        this.facturaService = facturaService;
     }
 
     // Método para verificar si el usuario tiene acceso a la factura
-    private boolean verificarAccesoFactura(Long facturaId, Authentication auth) {
+    private boolean verificarAccesoFactura(String facturaId, Authentication auth) {
         Factura factura = facturaRepository.findById(facturaId)
                 .orElseThrow(() -> new RuntimeException("Factura no encontrada"));
         
@@ -71,29 +69,44 @@ public class DetalleFacturaService {
         return factura.getCliente().getId().equals(cliente.getId());
     }
 
-    public List<DetalleFacturaDTO> getAllDetalles(Long facturaId, Authentication auth) {
+    public List<DetalleFacturaDTO> getAllDetalles(String facturaId, Authentication auth) {
         if (!verificarAccesoFactura(facturaId, auth)) {
             throw new RuntimeException("No tiene permiso para acceder a esta factura");
         }
         
-        return detalleFacturaRepository.findByFacturaId(facturaId).stream()
+        Factura factura = facturaRepository.findById(facturaId)
+                .orElseThrow(() -> new RuntimeException("Factura no encontrada"));
+        
+        if (factura.getDetalles() == null) {
+            return new ArrayList<>();
+        }
+        
+        return factura.getDetalles().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    public DetalleFacturaDTO getDetalleById(Long facturaId, Long detalleId, Authentication auth) {
+    public DetalleFacturaDTO getDetalleById(String facturaId, String detalleId, Authentication auth) {
         if (!verificarAccesoFactura(facturaId, auth)) {
             throw new RuntimeException("No tiene permiso para acceder a esta factura");
         }
         
-        DetalleFactura detalle = detalleFacturaRepository.findByIdAndFacturaId(detalleId, facturaId)
+        Factura factura = facturaRepository.findById(facturaId)
+                .orElseThrow(() -> new RuntimeException("Factura no encontrada"));
+        
+        if (factura.getDetalles() == null) {
+            throw new RuntimeException("Detalle no encontrado");
+        }
+        
+        DetalleFactura detalle = factura.getDetalles().stream()
+                .filter(d -> d.getId().equals(detalleId))
+                .findFirst()
                 .orElseThrow(() -> new RuntimeException("Detalle no encontrado"));
         
         return convertToDTO(detalle);
     }
 
-    @Transactional
-    public DetalleFacturaDTO createDetalle(Long facturaId, DetalleFacturaDTO detalleDTO, Authentication auth) {
+    public DetalleFacturaDTO createDetalle(String facturaId, DetalleFacturaDTO detalleDTO, Authentication auth) {
         if (!verificarAccesoFactura(facturaId, auth)) {
             throw new RuntimeException("No tiene permiso para modificar esta factura");
         }
@@ -102,21 +115,31 @@ public class DetalleFacturaService {
                 .orElseThrow(() -> new RuntimeException("Factura no encontrada"));
         
         DetalleFactura detalle = new DetalleFactura();
-        detalle.setFactura(factura);
+        detalle.setId(UUID.randomUUID().toString()); // Generar un ID único
         
         // Verificar si se está agregando un producto o un servicio
         if (detalleDTO.getProductoId() != null) {
+            detalle.setProductoId(detalleDTO.getProductoId());
             Producto producto = productoRepository.findById(detalleDTO.getProductoId())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
-            detalle.setProducto(producto);
+            detalle.setProductoNombre(producto.getNombre());
             
             // Calcular subtotal basado en el precio del producto y la cantidad
             BigDecimal precioProducto = producto.getPrecio();
             detalle.setSubtotal(precioProducto.multiply(new BigDecimal(detalleDTO.getCantidad())));
+            
+            // Actualizar el stock del producto
+            if (producto.getStock() < detalleDTO.getCantidad()) {
+                throw new RuntimeException("No hay suficiente stock del producto");
+            }
+            producto.setStock(producto.getStock() - detalleDTO.getCantidad());
+            productoRepository.save(producto);
+            
         } else if (detalleDTO.getServicioId() != null) {
+            detalle.setServicioId(detalleDTO.getServicioId());
             Servicio servicio = servicioRepository.findById(detalleDTO.getServicioId())
                     .orElseThrow(() -> new RuntimeException("Servicio no encontrado"));
-            detalle.setServicio(servicio);
+            detalle.setServicioNombre(servicio.getNombre());
             
             // Calcular subtotal basado en el precio del servicio
             detalle.setSubtotal(servicio.getPrecio());
@@ -126,84 +149,159 @@ public class DetalleFacturaService {
         
         detalle.setCantidad(detalleDTO.getCantidad());
         
-        // Guardar el detalle
-        DetalleFactura savedDetalle = detalleFacturaRepository.save(detalle);
+        // Añadir el detalle a la factura
+        if (factura.getDetalles() == null) {
+            factura.setDetalles(new ArrayList<>());
+        }
+        factura.getDetalles().add(detalle);
         
         // Recalcular el total de la factura
-        facturaService.calcularTotalFactura(facturaId, auth);
+        calcularTotalFactura(factura);
         
-        return convertToDTO(savedDetalle);
+        // Guardar la factura actualizada
+        facturaRepository.save(factura);
+        
+        return convertToDTO(detalle);
     }
 
-    @Transactional
-    public DetalleFacturaDTO updateDetalle(Long facturaId, Long detalleId, DetalleFacturaDTO detalleDTO, Authentication auth) {
+    public DetalleFacturaDTO updateDetalle(String facturaId, String detalleId, DetalleFacturaDTO detalleDTO, Authentication auth) {
         if (!verificarAccesoFactura(facturaId, auth)) {
             throw new RuntimeException("No tiene permiso para modificar esta factura");
         }
         
-        DetalleFactura detalle = detalleFacturaRepository.findByIdAndFacturaId(detalleId, facturaId)
+        Factura factura = facturaRepository.findById(facturaId)
+                .orElseThrow(() -> new RuntimeException("Factura no encontrada"));
+        
+        if (factura.getDetalles() == null) {
+            throw new RuntimeException("Detalle no encontrado");
+        }
+        
+        DetalleFactura detalle = factura.getDetalles().stream()
+                .filter(d -> d.getId().equals(detalleId))
+                .findFirst()
                 .orElseThrow(() -> new RuntimeException("Detalle no encontrado"));
         
         // Actualizar el producto si se proporciona
-        if (detalleDTO.getProductoId() != null) {
-            Producto producto = productoRepository.findById(detalleDTO.getProductoId())
+        if (detalleDTO.getProductoId() != null && !detalleDTO.getProductoId().equals(detalle.getProductoId())) {
+            // Si cambia el producto, restaurar el stock del producto anterior
+            if (detalle.getProductoId() != null) {
+                Optional<Producto> productoAnterior = productoRepository.findById(detalle.getProductoId());
+                productoAnterior.ifPresent(p -> {
+                    p.setStock(p.getStock() + detalle.getCantidad());
+                    productoRepository.save(p);
+                });
+            }
+            
+            Producto nuevoProducto = productoRepository.findById(detalleDTO.getProductoId())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
-            detalle.setProducto(producto);
+            
+            detalle.setProductoId(nuevoProducto.getId());
+            detalle.setProductoNombre(nuevoProducto.getNombre());
+            
+            // Restar el stock del nuevo producto
+            if (nuevoProducto.getStock() < detalleDTO.getCantidad()) {
+                throw new RuntimeException("No hay suficiente stock del producto");
+            }
+            nuevoProducto.setStock(nuevoProducto.getStock() - detalleDTO.getCantidad());
+            productoRepository.save(nuevoProducto);
             
             // Recalcular subtotal
-            BigDecimal precioProducto = producto.getPrecio();
+            BigDecimal precioProducto = nuevoProducto.getPrecio();
             detalle.setSubtotal(precioProducto.multiply(new BigDecimal(detalleDTO.getCantidad())));
+            
+            // Quitar servicio si había uno
+            detalle.setServicioId(null);
+            detalle.setServicioNombre(null);
         }
         
         // Actualizar el servicio si se proporciona
-        if (detalleDTO.getServicioId() != null) {
+        if (detalleDTO.getServicioId() != null && !detalleDTO.getServicioId().equals(detalle.getServicioId())) {
+            // Si cambia de producto a servicio, restaurar el stock del producto
+            if (detalle.getProductoId() != null) {
+                Optional<Producto> productoAnterior = productoRepository.findById(detalle.getProductoId());
+                productoAnterior.ifPresent(p -> {
+                    p.setStock(p.getStock() + detalle.getCantidad());
+                    productoRepository.save(p);
+                });
+            }
+            
             Servicio servicio = servicioRepository.findById(detalleDTO.getServicioId())
                     .orElseThrow(() -> new RuntimeException("Servicio no encontrado"));
-            detalle.setServicio(servicio);
+            
+            detalle.setServicioId(servicio.getId());
+            detalle.setServicioNombre(servicio.getNombre());
             
             // Recalcular subtotal para servicio
             detalle.setSubtotal(servicio.getPrecio());
+            
+            // Quitar producto si había uno
+            detalle.setProductoId(null);
+            detalle.setProductoNombre(null);
         }
         
         // Actualizar cantidad
         detalle.setCantidad(detalleDTO.getCantidad());
         
+        // Recalcular total de la factura
+        calcularTotalFactura(factura);
+        
         // Guardar cambios
-        DetalleFactura updatedDetalle = detalleFacturaRepository.save(detalle);
+        facturaRepository.save(factura);
         
-        // Recalcular el total de la factura
-        facturaService.calcularTotalFactura(facturaId, auth);
-        
-        return convertToDTO(updatedDetalle);
+        return convertToDTO(detalle);
     }
 
-    @Transactional
-    public void deleteDetalle(Long facturaId, Long detalleId, Authentication auth) {
+    public void deleteDetalle(String facturaId, String detalleId, Authentication auth) {
         if (!verificarAccesoFactura(facturaId, auth)) {
             throw new RuntimeException("No tiene permiso para modificar esta factura");
         }
         
-        DetalleFactura detalle = detalleFacturaRepository.findByIdAndFacturaId(detalleId, facturaId)
+        Factura factura = facturaRepository.findById(facturaId)
+                .orElseThrow(() -> new RuntimeException("Factura no encontrada"));
+        
+        if (factura.getDetalles() == null) {
+            throw new RuntimeException("Detalle no encontrado");
+        }
+        
+        DetalleFactura detalle = factura.getDetalles().stream()
+                .filter(d -> d.getId().equals(detalleId))
+                .findFirst()
                 .orElseThrow(() -> new RuntimeException("Detalle no encontrado"));
         
-        detalleFacturaRepository.delete(detalle);
+        // Si es un producto, devolver stock
+        if (detalle.getProductoId() != null) {
+            Optional<Producto> producto = productoRepository.findById(detalle.getProductoId());
+            producto.ifPresent(p -> {
+                p.setStock(p.getStock() + detalle.getCantidad());
+                productoRepository.save(p);
+            });
+        }
         
-        // Recalcular el total de la factura
-        facturaService.calcularTotalFactura(facturaId, auth);
+        // Eliminar el detalle
+        factura.getDetalles().removeIf(d -> d.getId().equals(detalleId));
+        
+        // Recalcular total
+        calcularTotalFactura(factura);
+        
+        // Guardar cambios
+        facturaRepository.save(factura);
+    }
+
+    private void calcularTotalFactura(Factura factura) {
+        BigDecimal total = factura.getDetalles() != null ? 
+            factura.getDetalles().stream()
+                .map(DetalleFactura::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add) :
+            BigDecimal.ZERO;
+        
+        factura.setTotal(total);
     }
 
     private DetalleFacturaDTO convertToDTO(DetalleFactura detalle) {
         DetalleFacturaDTO detalleDTO = new DetalleFacturaDTO();
         detalleDTO.setId(detalle.getId());
-        
-        if (detalle.getProducto() != null) {
-            detalleDTO.setProductoId(detalle.getProducto().getId());
-        }
-        
-        if (detalle.getServicio() != null) {
-            detalleDTO.setServicioId(detalle.getServicio().getId());
-        }
-        
+        detalleDTO.setProductoId(detalle.getProductoId());
+        detalleDTO.setServicioId(detalle.getServicioId());
         detalleDTO.setCantidad(detalle.getCantidad());
         detalleDTO.setSubtotal(detalle.getSubtotal());
         

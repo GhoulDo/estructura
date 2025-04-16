@@ -1,8 +1,8 @@
 package com.peluqueria.estructura.entity;
 
-
-
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
@@ -11,22 +11,21 @@ import java.util.List;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "facturas")
+@Document(collection = "facturas")
 public class Factura {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne
-    @JoinColumn(name = "cliente_id")
+    @DBRef
     private Cliente cliente;
 
     private LocalDateTime fecha;
     private BigDecimal total;
+    private String estado; // PENDIENTE, PAGADA, CANCELADA, etc.
 
-    @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL)
+    // En MongoDB podemos mantener los detalles embebidos en lugar de usar DBRef
+    // para mejorar el rendimiento de las consultas
     private List<DetalleFactura> detalles;
 }
 

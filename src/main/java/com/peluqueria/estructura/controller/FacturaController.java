@@ -1,7 +1,7 @@
 // src/main/java/com/peluqueria/estructura/controller/FacturaController.java
 package com.peluqueria.estructura.controller;
 
-import com.peluqueria.estructura.dto.FacturaDTO;
+import com.peluqueria.estructura.entity.Factura;
 import com.peluqueria.estructura.service.FacturaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -22,26 +22,28 @@ public class FacturaController {
     }
 
     @GetMapping
-    public ResponseEntity<List<FacturaDTO>> getAllFacturas() {
+    public ResponseEntity<List<Factura>> getAllFacturas() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return ResponseEntity.ok(facturaService.getAllFacturas(auth));
+        String username = auth.getName();
+        return ResponseEntity.ok(facturaService.findByClienteUsuarioUsername(username));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<FacturaDTO> getFacturaById(@PathVariable Long id) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return ResponseEntity.ok(facturaService.getFacturaById(id, auth));
+    public ResponseEntity<Factura> getFacturaById(@PathVariable String id) {
+        return facturaService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<FacturaDTO> createFactura(@RequestBody FacturaDTO facturaDTO) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return ResponseEntity.ok(facturaService.createFactura(facturaDTO, auth));
+    public ResponseEntity<Factura> createFactura(@RequestBody Factura factura) {
+        return ResponseEntity.ok(facturaService.save(factura));
     }
 
     @GetMapping("/{id}/total")
-    public ResponseEntity<BigDecimal> calcularTotalFactura(@PathVariable Long id) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return ResponseEntity.ok(facturaService.calcularTotalFactura(id, auth));
+    public ResponseEntity<BigDecimal> calcularTotalFactura(@PathVariable String id) {
+        return facturaService.findById(id)
+                .map(factura -> ResponseEntity.ok(factura.getTotal()))
+                .orElse(ResponseEntity.notFound().build());
     }
 }

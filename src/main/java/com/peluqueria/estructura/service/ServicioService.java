@@ -2,6 +2,7 @@ package com.peluqueria.estructura.service;
 
 import com.peluqueria.estructura.entity.Servicio;
 import com.peluqueria.estructura.repository.ServicioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,31 +13,24 @@ public class ServicioService {
 
     private final ServicioRepository servicioRepository;
 
+    @Autowired
     public ServicioService(ServicioRepository servicioRepository) {
         this.servicioRepository = servicioRepository;
     }
 
-    public List<Servicio> listarServicios() {
+    public List<Servicio> findAll() {
         return servicioRepository.findAll();
     }
 
-    public Optional<Servicio> obtenerServicioPorId(Long id) {
+    public Optional<Servicio> findById(String id) {
         return servicioRepository.findById(id);
     }
 
-    public Servicio guardarServicio(Servicio servicio) {
+    public Servicio save(Servicio servicio) {
         return servicioRepository.save(servicio);
     }
 
-    public void eliminarServicio(Long id) {
+    public void deleteById(String id) {
         servicioRepository.deleteById(id);
-    }
-
-    public List<Servicio> getAllServicios() {
-        return servicioRepository.findAll();
-    }
-
-    public Servicio createServicio(Servicio servicio) {
-        return servicioRepository.save(servicio);
     }
 }

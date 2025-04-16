@@ -1,20 +1,17 @@
 spring:
   application:
     name: estructura
-  datasource:
-    url: jdbc:postgresql://enciso-s-enterprice-8431.j77.aws-us-east-1.cockroachlabs.cloud:26257/peluqueria_perros?sslmode=require
-    username: jhoan
-    password: Q-vjgvfzou8IVj2Z4eZENg
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
-    hibernate:
-      ddl-auto: update
+  data:
+    mongodb:
+      uri: mongodb+srv://joooohanenciso:kRyEZZOUseC0pSC7@cluster0.hw1quvh.mongodb.net/peluqueria_canina?retryWrites=true&w=majority&appName=Cluster0
 
 server:
-  port: 3030
+  port: 8080
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/plain
+    min-response-size: 1024
 
 jwt:
   secret: your_secure_secret_key_here_that_is_at_least_256_bits_long_1234567890abcdef
-  expiration: 3600000
+  expiration: 604800000

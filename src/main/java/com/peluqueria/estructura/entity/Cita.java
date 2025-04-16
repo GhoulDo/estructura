@@ -1,6 +1,8 @@
 package com.peluqueria.estructura.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDate;
@@ -8,24 +10,24 @@ import java.time.LocalTime;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "citas")
+@Document(collection = "citas")
 public class Cita {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @ManyToOne
-    @JoinColumn(name = "mascota_id")                                
+    @DBRef
     private Mascota mascota;
 
-    @ManyToOne
-    @JoinColumn(name = "servicio_id")
+    @DBRef
     private Servicio servicio;
 
     private LocalDate fecha;
     private LocalTime hora;
     private String estado;
+    
+    // Nuevos campos para facturación
+    private boolean facturada = false;
+    private String facturaId;
 }
 

@@ -20,35 +20,35 @@ public class ServicioController {
 
     @GetMapping
     public ResponseEntity<List<Servicio>> getAllServicios() {
-        return ResponseEntity.ok(servicioService.getAllServicios());
+        return ResponseEntity.ok(servicioService.findAll());
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<Servicio> getServicioById(@PathVariable Long id) {
-        return servicioService.obtenerServicioPorId(id)
+    public ResponseEntity<Servicio> getServicioById(@PathVariable String id) {
+        return servicioService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
     
     @PostMapping
     public ResponseEntity<Servicio> createServicio(@RequestBody Servicio servicio) {
-        Servicio nuevoServicio = servicioService.createServicio(servicio);
+        Servicio nuevoServicio = servicioService.save(servicio);
         return new ResponseEntity<>(nuevoServicio, HttpStatus.CREATED);
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<Servicio> updateServicio(@PathVariable Long id, @RequestBody Servicio servicio) {
-        return servicioService.obtenerServicioPorId(id)
+    public ResponseEntity<Servicio> updateServicio(@PathVariable String id, @RequestBody Servicio servicio) {
+        return servicioService.findById(id)
                 .map(servicioExistente -> {
                     servicio.setId(id);
-                    return ResponseEntity.ok(servicioService.guardarServicio(servicio));
+                    return ResponseEntity.ok(servicioService.save(servicio));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
     
     @PatchMapping("/{id}")
-    public ResponseEntity<Servicio> patchServicio(@PathVariable Long id, @RequestBody Servicio servicioActualizado) {
-        return servicioService.obtenerServicioPorId(id)
+    public ResponseEntity<Servicio> patchServicio(@PathVariable String id, @RequestBody Servicio servicioActualizado) {
+        return servicioService.findById(id)
                 .map(servicioExistente -> {
                     // Actualiza solo los campos no nulos
                     if (servicioActualizado.getNombre() != null) {
@@ -61,16 +61,16 @@ public class ServicioController {
                         servicioExistente.setPrecio(servicioActualizado.getPrecio());
                     }
                     
-                    return ResponseEntity.ok(servicioService.guardarServicio(servicioExistente));
+                    return ResponseEntity.ok(servicioService.save(servicioExistente));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
     
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteServicio(@PathVariable Long id) {
-        return servicioService.obtenerServicioPorId(id)
+    public ResponseEntity<Void> deleteServicio(@PathVariable String id) {
+        return servicioService.findById(id)
                 .map(servicio -> {
-                    servicioService.eliminarServicio(id);
+                    servicioService.deleteById(id);
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());

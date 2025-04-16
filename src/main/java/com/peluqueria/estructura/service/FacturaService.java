@@ -1,131 +1,61 @@
 // src/main/java/com/peluqueria/estructura/service/FacturaService.java
 package com.peluqueria.estructura.service;
 
-import com.peluqueria.estructura.dto.FacturaDTO;
-import com.peluqueria.estructura.entity.Cliente;
 import com.peluqueria.estructura.entity.Factura;
-import com.peluqueria.estructura.entity.Usuario;
-import com.peluqueria.estructura.repository.ClienteRepository;
 import com.peluqueria.estructura.repository.FacturaRepository;
-import com.peluqueria.estructura.repository.UsuarioRepository;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 public class FacturaService {
 
     private final FacturaRepository facturaRepository;
-    private final ClienteRepository clienteRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final ProductoService productoService;
 
-    public FacturaService(FacturaRepository facturaRepository, 
-                         ClienteRepository clienteRepository,
-                         UsuarioRepository usuarioRepository) {
+    @Autowired
+    public FacturaService(FacturaRepository facturaRepository, ProductoService productoService) {
         this.facturaRepository = facturaRepository;
-        this.clienteRepository = clienteRepository;
-        this.usuarioRepository = usuarioRepository;
+        this.productoService = productoService;
     }
 
-    public List<FacturaDTO> getAllFacturas(Authentication auth) {
-        List<Factura> facturas;
-        
-        // Si es ADMIN, puede ver todas las facturas
-        if (auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
-            facturas = facturaRepository.findAll();
-        } else {
-            // Si es CLIENTE, solo ve sus propias facturas
-            String username = auth.getName();
-            Usuario usuario = usuarioRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-            
-            Cliente cliente = clienteRepository.findByUsuarioId(usuario.getId())
-                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
-            
-            facturas = facturaRepository.findByClienteId(cliente.getId());
+    public List<Factura> findAll() {
+        return facturaRepository.findAll();
+    }
+
+    public Optional<Factura> findById(String id) {
+        return facturaRepository.findById(id);
+    }
+
+    public List<Factura> findByClienteId(String clienteId) {
+        return facturaRepository.findByClienteId(clienteId);
+    }
+
+    public List<Factura> findByFechaBetween(LocalDateTime inicio, LocalDateTime fin) {
+        return facturaRepository.findByFechaBetween(inicio, fin);
+    }
+
+    public List<Factura> findByClienteUsuarioUsername(String username) {
+        return facturaRepository.findByClienteUsuarioUsername(username);
+    }
+
+    public Factura save(Factura factura) {
+        // Actualizamos el stock de productos si es necesario
+        if (factura.getDetalles() != null) {
+            factura.getDetalles().forEach(detalle -> {
+                if (detalle.getProductoId() != null) {
+                    // Reducimos el stock del producto
+                    productoService.actualizarStock(detalle.getProductoId(), -detalle.getCantidad());
+                }
+            });
         }
-        
-        return facturas.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return facturaRepository.save(factura);
     }
 
-    public FacturaDTO getFacturaById(Long id, Authentication auth) {
-        Factura factura = facturaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Factura no encontrada"));
-        
-        // Si es CLIENTE, verificar que la factura le pertenezca
-        if (!auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
-            String username = auth.getName();
-            Usuario usuario = usuarioRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-            
-            Cliente cliente = clienteRepository.findByUsuarioId(usuario.getId())
-                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
-            
-            if (!factura.getCliente().getId().equals(cliente.getId())) {
-                throw new RuntimeException("No tiene permiso para ver esta factura");
-            }
-        }
-        
-        return convertToDTO(factura);
-    }
-
-    public FacturaDTO createFactura(FacturaDTO facturaDTO, Authentication auth) {
-        Factura factura = new Factura();
-        
-        // Si es CLIENTE, asignar automáticamente su cliente
-        if (!auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
-            String username = auth.getName();
-            Usuario usuario = usuarioRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-            
-            Cliente cliente = clienteRepository.findByUsuarioId(usuario.getId())
-                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
-            
-            factura.setCliente(cliente);
-        } else {
-            // Si es ADMIN, usar el cliente proporcionado
-            Cliente cliente = clienteRepository.findById(facturaDTO.getClienteId())
-                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
-            factura.setCliente(cliente);
-        }
-        
-        factura.setFecha(facturaDTO.getFecha());
-        factura.setTotal(BigDecimal.ZERO); // Se calculará al agregar detalles
-        
-        Factura savedFactura = facturaRepository.save(factura);
-        return convertToDTO(savedFactura);
-    }
-
-    public BigDecimal calcularTotalFactura(Long facturaId, Authentication auth) {
-        // Verificar acceso primero
-        FacturaDTO factura = getFacturaById(facturaId, auth);
-        
-        // Llamar a la función en el repositorio para calcular el total
-        BigDecimal total = facturaRepository.calcularTotalFactura(facturaId);
-        
-        // Actualizar el total en la factura
-        Factura facturaEntity = facturaRepository.findById(facturaId)
-                .orElseThrow(() -> new RuntimeException("Factura no encontrada"));
-        facturaEntity.setTotal(total);
-        facturaRepository.save(facturaEntity);
-        
-        return total;
-    }
-    
-    private FacturaDTO convertToDTO(Factura factura) {
-        FacturaDTO dto = new FacturaDTO();
-        dto.setId(factura.getId());
-        dto.setClienteId(factura.getCliente().getId());
-        dto.setClienteNombre(factura.getCliente().getNombre());
-        dto.setFecha(factura.getFecha());
-        dto.setTotal(factura.getTotal());
-        return dto;
+    public void deleteById(String id) {
+        facturaRepository.deleteById(id);
     }
 }

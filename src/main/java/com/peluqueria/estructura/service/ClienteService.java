@@ -2,41 +2,43 @@ package com.peluqueria.estructura.service;
 
 import com.peluqueria.estructura.entity.Cliente;
 import com.peluqueria.estructura.repository.ClienteRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
 
+    @Autowired
     public ClienteService(ClienteRepository clienteRepository) {
         this.clienteRepository = clienteRepository;
     }
 
-    public List<Cliente> getAllClientes() {
+    public List<Cliente> findAll() {
         return clienteRepository.findAll();
     }
 
-    public Cliente getClienteById(Long id) {
-        return clienteRepository.findById(id).orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+    public Optional<Cliente> findById(String id) {
+        return clienteRepository.findById(id);
     }
 
-    public Cliente createCliente(Cliente cliente) {
+    public Optional<Cliente> findByUsuarioId(String usuarioId) {
+        return clienteRepository.findByUsuarioId(usuarioId);
+    }
+
+    public Optional<Cliente> findByUsuarioUsername(String username) {
+        return clienteRepository.findByUsuarioUsername(username);
+    }
+
+    public Cliente save(Cliente cliente) {
         return clienteRepository.save(cliente);
     }
 
-    public Cliente updateCliente(Long id, Cliente cliente) {
-        Cliente existingCliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
-        existingCliente.setNombre(cliente.getNombre());
-        existingCliente.setEmail(cliente.getEmail());
-        existingCliente.setTelefono(cliente.getTelefono());
-        return clienteRepository.save(existingCliente);
-    }
-
-    public void deleteCliente(Long id) {
+    public void deleteById(String id) {
         clienteRepository.deleteById(id);
     }
 }

@@ -1,31 +1,29 @@
 package com.peluqueria.estructura.entity;
 
-
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.List;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "clientes")
+@Document(collection = "clientes")
 public class Cliente {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
     private String nombre;
     private String telefono;
     private String email;
     private String direccion;
 
-    @OneToOne
-    @JoinColumn(name = "usuario_id", referencedColumnName = "id")
+    @DBRef
     private Usuario usuario;
 
-    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL)
+    @DBRef
     private List<Mascota> mascotas;
 }
 

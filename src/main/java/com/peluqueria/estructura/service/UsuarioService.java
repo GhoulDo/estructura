@@ -2,70 +2,50 @@ package com.peluqueria.estructura.service;
 
 import com.peluqueria.estructura.entity.Usuario;
 import com.peluqueria.estructura.repository.UsuarioRepository;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.ArrayList;
 
 @Service
-public class UsuarioService implements UserDetailsService {
+public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    @Autowired
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public Optional<Usuario> obtenerUsuarioPorUsername(String username) {
-        return usuarioRepository.findByUsername(username);
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
-        // Intenta buscar primero por email
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(usernameOrEmail);
-        
-        // Si no encuentra por email, intenta por username
-        if (!usuarioOpt.isPresent()) {
-            usuarioOpt = usuarioRepository.findByUsername(usernameOrEmail);
-        }
-        
-        Usuario usuario = usuarioOpt.orElseThrow(() -> 
-                new UsernameNotFoundException("Usuario no encontrado: " + usernameOrEmail));
-        
-        // Crear autoridades basadas en el rol del usuario
-        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        
-        // Asegurarse que el rol tenga el prefijo ROLE_
-        if (usuario.getRol() != null) {
-            String rol = usuario.getRol().toUpperCase();
-            if (!rol.startsWith("ROLE_")) {
-                rol = "ROLE_" + rol;
-            }
-            authorities.add(new SimpleGrantedAuthority(rol));
-        }
-        
-        return new org.springframework.security.core.userdetails.User(
-            usuario.getUsername(),  // Usar username en vez de email
-            usuario.getPassword(), 
-            authorities
-        );
-    }
-
-    public List<Usuario> getAllUsuarios() {
+    public List<Usuario> findAll() {
         return usuarioRepository.findAll();
     }
 
-    public Usuario getUsuarioById(Long id) {
-        return usuarioRepository.findById(id).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    public Optional<Usuario> findById(String id) {
+        return usuarioRepository.findById(id);
     }
 
-    public void deleteUsuario(Long id) {
+    public Optional<Usuario> findByUsername(String username) {
+        return usuarioRepository.findByUsername(username);
+    }
+
+    public Usuario save(Usuario usuario) {
+        // Encriptar contraseña antes de guardar
+        if (usuario.getPassword() != null && !usuario.getPassword().startsWith("$2a$")) {
+            usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        }
+        return usuarioRepository.save(usuario);
+    }
+
+    public void deleteById(String id) {
         usuarioRepository.deleteById(id);
+    }
+
+    public boolean existsByUsername(String username) {
+        return usuarioRepository.existsByUsername(username);
     }
 }

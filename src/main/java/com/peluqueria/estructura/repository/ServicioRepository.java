@@ -1,10 +1,12 @@
 package com.peluqueria.estructura.repository;
 
-
 import com.peluqueria.estructura.entity.Servicio;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
-public interface ServicioRepository extends JpaRepository<Servicio, Long> {
+@Repository
+public interface ServicioRepository extends MongoRepository<Servicio, String> {
+    // Podemos agregar consultas personalizadas si son necesarias
 }
 
 

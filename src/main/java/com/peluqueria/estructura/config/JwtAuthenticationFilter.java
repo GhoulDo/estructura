@@ -1,16 +1,18 @@
 package com.peluqueria.estructura.config;
 
-import com.peluqueria.estructura.security.JwtUtil;
-import com.peluqueria.estructura.service.UsuarioService;
+import com.peluqueria.estructura.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -18,70 +20,44 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
-    private final UsuarioService usuarioService;
+    @Autowired
+    private JwtService jwtService;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil, UsuarioService usuarioService) {
-        this.jwtUtil = jwtUtil;
-        this.usuarioService = usuarioService;
-    }
+    @Autowired
+    private UserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                   HttpServletResponse response,
-                                   FilterChain chain) throws ServletException, IOException {
-        final String requestURI = request.getRequestURI();
-        final String method = request.getMethod();
-        
-        // Log para debugging
-        logger.info("Processing request: " + method + " " + requestURI);
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
 
-        // Si es una ruta pública, continuamos sin verificar
-        if (requestURI.startsWith("/api/auth/")) {
-            chain.doFilter(request, response);
-            return;
-        }
+        try {
+            String jwt = parseJwt(request);
+            if (jwt != null && jwtService.validateJwtToken(jwt)) {
+                String username = jwtService.getUsernameFromJwtToken(jwt);
 
-        String authorizationHeader = request.getHeader("Authorization");
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            logger.warn("No Authorization header or not Bearer token");
-            chain.doFilter(request, response);
-            return;
-        }
-
-        String token = authorizationHeader.substring(7);
-        String username = jwtUtil.extractUsername(token);
-        
-        logger.info("Token received for user: " + username);
-
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            try {
-                UserDetails userDetails = usuarioService.loadUserByUsername(username);
-                
-                // Log para ver las autoridades asignadas
-                logger.info("User authorities: " + userDetails.getAuthorities());
-
-                if (jwtUtil.isTokenValid(token, userDetails.getUsername())) {
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(
-                                userDetails, 
-                                null, 
-                                userDetails.getAuthorities()
-                            );
-                    
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                    
-                    logger.info("Authentication successful, user authenticated with authorities");
-                } else {
-                    logger.warn("Token validation failed");
-                }
-            } catch (Exception e) {
-                logger.error("Error authenticating user: " + e.getMessage(), e);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+        } catch (Exception e) {
+            logger.error("Cannot set user authentication: {}", e);
         }
 
-        chain.doFilter(request, response);
+        filterChain.doFilter(request, response);
+    }
+
+    private String parseJwt(HttpServletRequest request) {
+        String headerAuth = request.getHeader("Authorization");
+
+        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
+            return headerAuth.substring(7);
+        }
+
+        return null;
     }
 }

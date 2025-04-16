@@ -1,19 +1,18 @@
 package com.peluqueria.estructura.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "servicios")
+@Document(collection = "servicios")
 public class Servicio {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
     private String nombre;
     private int duracion;

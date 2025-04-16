@@ -1,0 +1,374 @@
+# GUÍA PARA DESPLEGAR EL PROYECTO DE PELUQUERÍA CANINA EN RENDER CON MONGODB ATLAS
+
+## PARTE 1: CONFIGURACIÓN DE MONGODB ATLAS
+
+1. **Crear una cuenta en MongoDB Atlas**:
+   - Visita https://www.mongodb.com/cloud/atlas/register
+   - Regístrate con tu correo electrónico o usa Google/GitHub para el registro
+
+2. **Crear un nuevo cluster**:
+   - Una vez iniciada sesión, haz clic en "Create" para crear un nuevo proyecto
+   - Ponle un nombre como "PeluqueriaCanina"
+   - Haz clic en "Create Project"
+   - Selecciona el nivel gratuito "Shared" (M0)
+   - Elige un proveedor de nube (AWS, Google Cloud o Azure) y una región cercana a tus usuarios
+   - Haz clic en "Create Cluster" (puede tardar unos minutos en crearse)
+
+   usuario y contraseña de mongoDB:
+   joooohanenciso@gmail.com
+   kRyEZZOUseC0pSC7
+
+   esta es la cadena de conexión que debes usar para conectarte a tu cluster de MongoDB Atlas:
+   mongodb+srv://joooohanenciso:<db_password>@cluster0.hw1quvh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+
+   o codigo :
+   
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoException;
+import com.mongodb.ServerApi;
+import com.mongodb.ServerApiVersion;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoDatabase;
+import org.bson.Document;
+
+public class MongoClientConnectionExample {
+    public static void main(String[] args) {
+        String connectionString = "mongodb+srv://joooohanenciso:<db_password>@cluster0.hw1quvh.mongodb.net/?appName=Cluster0";
+
+        ServerApi serverApi = ServerApi.builder()
+                .version(ServerApiVersion.V1)
+                .build();
+
+        MongoClientSettings settings = MongoClientSettings.builder()
+                .applyConnectionString(new ConnectionString(connectionString))
+                .serverApi(serverApi)
+                .build();
+
+        // Create a new client and connect to the server
+        try (MongoClient mongoClient = MongoClients.create(settings)) {
+            try {
+                // Send a ping to confirm a successful connection
+                MongoDatabase database = mongoClient.getDatabase("admin");
+                database.runCommand(new Document("ping", 1));
+                System.out.println("Pinged your deployment. You successfully connected to MongoDB!");
+            } catch (MongoException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+
+
+3. **Configurar seguridad**:
+   - En el menú de la izquierda, ve a "Database Access" y haz clic en "Add New Database User"
+   - Crea un usuario con contraseña, guarda estas credenciales en un lugar seguro
+   estos son :
+   - Usuario: joooohanenciso@gmail.com
+   contraseña: kRyEZZOUseC0pSC7
+   estas son las opciones que me salen en mongo atlas la web:
+
+   Johan sebastian's Org - 2025-04-01 > PeluqueriaCanina
+
+   - Otorga permisos de "Read and Write to Any Database"
+   - En "Network Access", haz clic en "Add IP Address"
+   
+   - Para desarrollo, puedes seleccionar "Allow Access from Anywhere" (0.0.0.0/0)
+   - Para producción, deberías restringir a las IPs de Render
+
+4. **Crear la base de datos**:
+   - Haz clic en "Browse Collections" y luego en "Add My Own Data"
+   - Crea una base de datos llamada "peluqueria_canina"
+   - Puedes crear algunas colecciones iniciales como "usuarios", "clientes", "mascotas", etc.
+
+5. **Obtener la cadena de conexión**:
+   - Haz clic en "Connect" en tu cluster
+   - Selecciona "Connect your application"
+   - Copia la cadena de conexión, se verá algo así:
+     ```
+     mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/peluqueria_canina?retryWrites=true&w=majority
+     ```
+   - Reemplaza <username> y <password> con las credenciales que creaste
+
+   en mi caso fue:
+    usuario y contraseña de mongoDB:
+   joooohanenciso@gmail.com
+   kRyEZZOUseC0pSC7
+
+   esta es la cadena de conexión que debes usar para conectarte a tu cluster de MongoDB Atlas:
+   mongodb+srv://joooohanenciso:<db_password>@cluster0.hw1quvh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+
+   
+
+
+
+## PARTE 2: PREPARAR TU PROYECTO PARA RENDER
+
+1. **Actualizar application.properties**:
+   - Modifica el archivo `src/main/resources/application.properties` para que use la URL de MongoDB Atlas en lugar de localhost:
+   ```properties
+   spring.data.mongodb.uri=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/peluqueria_canina?retryWrites=true&w=majority
+   ```
+
+2. **Crear archivo system.properties**:
+   - Crea un archivo `system.properties` en la raíz del proyecto con el siguiente contenido:
+   ```
+   java.runtime.version=17
+   ```
+
+3. **Crear Dockerfile** (opcional, si prefieres desplegar con Docker):
+   - Crea un archivo `Dockerfile` en la raíz del proyecto:
+   ```Dockerfile
+   FROM eclipse-temurin:17-jdk-alpine
+   VOLUME /tmp
+   COPY target/*.jar app.jar
+   ENTRYPOINT ["java","-jar","/app.jar"]
+   ```
+
+4. **Compilar el proyecto**:
+   - Ejecuta: `mvn clean package -DskipTests`
+   - Esto generará el archivo JAR en la carpeta target/
+
+## PARTE 3: DESPLEGAR EN RENDER
+
+1. **Crear una cuenta en Render**:
+   - Visita https://render.com/ y regístrate
+
+2. **Crear un nuevo servicio Web**:
+   - Haz clic en "New+" y selecciona "Web Service"
+   - Conecta tu repositorio Git (GitHub, GitLab, Bitbucket)
+   - Si tu código no está en un repositorio, puedes usar la opción "Deploy from Docker Registry"
+
+3. **Configurar el servicio**:
+   - **Nombre**: PeluqueriaCanina-API (o el que prefieras)
+   - **Región**: Elige la más cercana a tus usuarios
+   - **Branch**: main (o la rama que uses)
+   - **Runtime**: Docker o Java (según prefieras)
+     
+   - Si eliges Java:
+     * **Build Command**: `./mvnw clean package -DskipTests`
+     * **Start Command**: `java -jar target/*.jar`
+
+   - Si eliges Docker:
+     * Render detectará automáticamente el Dockerfile
+
+4. **Variables de entorno**:
+   - Haz clic en "Advanced" y añade estas variables de entorno:
+     * `SPRING_DATA_MONGODB_URI`: mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/peluqueria_canina?retryWrites=true&w=majority
+     * `JWT_SECRET`: tu_clave_secreta_muy_larga_y_segura
+     * `SERVER_PORT`: 8080
+     * `SPRING_PROFILES_ACTIVE`: prod
+
+5. **Plan y precios**:
+   - Selecciona el plan que mejor se adapte a tus necesidades:
+     * Para pruebas: Free (tiene limitaciones y se suspende después de periodos de inactividad)
+     * Para producción: Individual ($7/mes) o superior
+
+6. **Crear servicio Web**:
+   - Haz clic en "Create Web Service"
+   - Render comenzará a construir y desplegar tu aplicación (esto puede tardar unos minutos)
+
+7. **Verificar el despliegue**:
+   - Una vez completado el despliegue, Render te proporcionará una URL (algo como https://peluqueriacanina-api.onrender.com)
+   - Puedes probar la API usando esta URL + las rutas de tu API (ej. /api/auth/login)
+
+## CONSIDERACIONES IMPORTANTES
+
+1. **Seguridad**:
+   - No subas credenciales (MongoDB, JWT) directamente en el código
+   - Usa variables de entorno en Render para configurar esto
+   - En MongoDB Atlas, restringe el acceso por IP cuando estés en producción
+
+2. **CORS**:
+   - Asegúrate de que tu configuración CORS permita solicitudes desde el dominio de tu frontend (si lo desplegarás por separado)
+
+3. **Monitoreo**:
+   - Render proporciona logs y métricas básicas
+   - MongoDB Atlas también tiene herramientas de monitoreo
+
+4. **Rendimiento**:
+   - El nivel gratuito de Render se suspende después de periodos de inactividad, lo que puede causar arranques lentos
+   - Considera un plan de pago para aplicaciones de producción
+
+5. **Dominio personalizado**:
+   - Si tienes un dominio propio, puedes configurarlo en Render en la sección "Settings"
+   - También necesitarás configurar los registros DNS apropiados en tu proveedor de dominio
+
+6. **SSL/HTTPS**:
+   - Render proporciona HTTPS automáticamente para todos los sitios, incluso en el plan gratuito
+
+## PARTE 4: CONFIGURACIÓN PARA CONSUMO DESDE FLUTTER/DART
+
+### Preparación del Backend para Flutter/Dart
+
+1. **Configuración CORS para Flutter/Dart**:
+   - Modifica la clase `CorsConfig.java` para permitir peticiones desde tu aplicación Flutter:
+   ```java
+   @Configuration
+   public class CorsConfig {
+       @Bean
+       public CorsFilter corsFilter() {
+           UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+           CorsConfiguration config = new CorsConfiguration();
+           
+           // Permitir recibir peticiones de cualquier origen (importante para Flutter)
+           config.addAllowedOriginPattern("*");
+           
+           // Permitir enviar credenciales (cookies, autenticación, etc)
+           config.setAllowCredentials(true);
+           
+           // Permitir estos headers
+           config.addAllowedHeader("*");
+           
+           // Permitir estos métodos HTTP
+           config.addAllowedMethod("*");
+           
+           // Exponer headers personalizados (importantes para autenticación)
+           config.addExposedHeader("Authorization");
+           config.addExposedHeader("Content-Type");
+           
+           source.registerCorsConfiguration("/**", config);
+           return new CorsFilter(source);
+       }
+   }
+   ```
+
+2. **Modificar la duración de los tokens JWT**:
+   - Para mejorar la experiencia en dispositivos móviles, considera aumentar la duración de los tokens JWT:
+   - Busca la clase `JwtService.java` y aumenta la duración del token (por ejemplo, a 7 días):
+   ```java
+   // Ejemplo: 7 días en milisegundos
+   private final long jwtExpirationMs = 7 * 24 * 60 * 60 * 1000;
+   ```
+
+3. **Añadir endpoint de prueba de salud**:
+   - Crea un endpoint para verificar el estado del servidor (útil para Flutter):
+   - Crea un nuevo controlador llamado `HealthController.java`:
+   ```java
+   @RestController
+   @RequestMapping("/api/health")
+   public class HealthController {
+       @GetMapping
+       public ResponseEntity<Map<String, String>> healthCheck() {
+           Map<String, String> status = new HashMap<>();
+           status.put("status", "UP");
+           status.put("timestamp", LocalDateTime.now().toString());
+           return ResponseEntity.ok(status);
+       }
+   }
+   ```
+
+4. **Configurar compresión de respuestas**:
+   - Añade en `application.properties` para mejorar el rendimiento en redes móviles:
+   ```properties
+   server.compression.enabled=true
+   server.compression.mime-types=application/json,application/xml,text/plain
+   server.compression.min-response-size=1024
+   ```
+
+### Consideraciones para la Aplicación Flutter/Dart
+
+1. **Configuración del cliente HTTP en Flutter**:
+   - Instala el paquete http o dio para realizar peticiones a tu API:
+   ```dart
+   // Con el paquete dio
+   final dio = Dio();
+   // Configura la URL base de tu API en Render
+   dio.options.baseUrl = 'https://tu-app-peluqueria.onrender.com/api';
+   // Para incluir tokens en todas las peticiones
+   dio.options.headers['Authorization'] = 'Bearer $token';
+   ```
+
+2. **Manejo de tokens JWT en Flutter**:
+   - Guarda el token JWT de manera segura usando `flutter_secure_storage`:
+   ```dart
+   final storage = FlutterSecureStorage();
+   await storage.write(key: 'jwt_token', value: token);
+   ```
+
+3. **Manejo de latencia**:
+   - Recuerda que el plan gratuito de Render "duerme" el servidor tras 15 minutos de inactividad:
+   - Implementa una pantalla de carga o "splash screen" en Flutter para la primera conexión
+   - Considera implementar reintentos automáticos para las peticiones:
+   ```dart
+   Future<Response> requestWithRetry(Future<Response> Function() request) async {
+     int attempts = 0;
+     while (attempts < 3) {
+       try {
+         return await request();
+       } catch (e) {
+         attempts++;
+         if (attempts >= 3) rethrow;
+         await Future.delayed(Duration(seconds: 2 * attempts));
+       }
+     }
+     throw Exception('Todos los reintentos fallaron');
+   }
+   ```
+
+4. **Optimización de peticiones**:
+   - Implementa caché local en Flutter para reducir peticiones al servidor:
+   - Usa paquetes como `hive` o `sqflite` para almacenamiento local
+
+### Ejemplos de Uso en Flutter
+
+1. **Login y almacenamiento de token**:
+   ```dart
+   Future<bool> login(String username, String password) async {
+     try {
+       final response = await dio.post('/auth/login', 
+         data: {'username': username, 'password': password});
+       
+       if (response.statusCode == 200) {
+         String token = response.data['token'];
+         await storage.write(key: 'jwt_token', value: token);
+         return true;
+       }
+       return false;
+     } catch (e) {
+       print('Error en login: $e');
+       return false;
+     }
+   }
+   ```
+
+2. **Interceptor para refrescar token expirado**:
+   ```dart
+   dio.interceptors.add(InterceptorsWrapper(
+     onError: (error, handler) async {
+       if (error.response?.statusCode == 401) {
+         // Token expirado, intenta renovarlo o redirige al login
+         // ...
+       }
+       return handler.next(error);
+     }
+   ));
+   ```
+
+## Consideraciones Adicionales para el Despliegue
+
+1. **Monitoring y notificaciones**:
+   - Configura alertas en Render para recibir notificaciones si el servicio falla
+   - Utiliza herramientas como Sentry.io para monitorear errores en la aplicación Flutter
+
+2. **SSL Certificate**:
+   - Asegúrate de que tu aplicación Flutter está configurada para aceptar certificados SSL de Render
+
+3. **Testing en dispositivos reales**:
+   - Prueba la aplicación Flutter en dispositivos reales antes de publicarla
+   - Verifica la latencia de la API desde diferentes redes móviles
+
+4. **Plan de escalado**:
+   - Si la aplicación crece en uso, considera migrar a un plan de pago en Render:
+     * Servicio "Individual" ($7/mes) para aplicaciones con poco tráfico
+     * Servicios "Team" o "Business" para aplicaciones con más uso
+
+Con estas configuraciones adicionales, tu backend estará optimizado para ser consumido desde aplicaciones Flutter o Dart, mejorando la experiencia del usuario y haciendo que tu aplicación móvil sea más robusta y eficiente.
+
+## SIGUIENTES PASOS DESPUÉS DEL DESPLIEGUE
+
+1. Configurar tu aplicación frontend para conectarse a la nueva API
+2. Realizar pruebas exhaustivas en el entorno de producción
+3. Configurar copias de seguridad automáticas en MongoDB Atlas
+4. Considerar la configuración de CI/CD para automatizar futuros despliegues
