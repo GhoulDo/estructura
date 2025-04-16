@@ -1,5 +1,10 @@
 package com.peluqueria.estructura.security;
 
+// IMPORTANTE: Esta clase ha sido desactivada para evitar conflictos de beans
+// La configuración de seguridad completa ahora está en com.peluqueria.estructura.config.SecurityConfig
+// Este archivo se puede eliminar después de verificar que la aplicación funciona correctamente
+
+/*
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,3 +55,4 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 }
+*/
