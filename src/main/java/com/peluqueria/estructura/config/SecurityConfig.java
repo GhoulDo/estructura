@@ -36,6 +36,9 @@ public class SecurityConfig {
             // Rutas públicas para autenticación
             .requestMatchers("/api/auth/**").permitAll()
             
+            // Permitir acceso público al endpoint de health check
+            .requestMatchers("/api/health/**").permitAll()
+            
             // Permisos para servicios - permitir GET para CLIENTE y ADMIN
             .requestMatchers(HttpMethod.GET, "/api/servicios/**").hasAnyRole("CLIENTE", "ADMIN")
             // Solo ADMIN puede realizar operaciones POST, PUT, PATCH y DELETE
