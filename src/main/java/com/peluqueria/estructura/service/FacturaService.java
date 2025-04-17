@@ -9,17 +9,16 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class FacturaService {
 
     private final FacturaRepository facturaRepository;
-    private final ProductoService productoService;
 
     @Autowired
-    public FacturaService(FacturaRepository facturaRepository, ProductoService productoService) {
+    public FacturaService(FacturaRepository facturaRepository) {
         this.facturaRepository = facturaRepository;
-        this.productoService = productoService;
     }
 
     public List<Factura> findAll() {
@@ -34,28 +33,27 @@ public class FacturaService {
         return facturaRepository.findByClienteId(clienteId);
     }
 
-    public List<Factura> findByFechaBetween(LocalDateTime inicio, LocalDateTime fin) {
-        return facturaRepository.findByFechaBetween(inicio, fin);
-    }
-
-    public List<Factura> findByClienteUsuarioUsername(String username) {
-        return facturaRepository.findByClienteUsuarioUsername(username);
-    }
-
     public Factura save(Factura factura) {
-        // Actualizamos el stock de productos si es necesario
-        if (factura.getDetalles() != null) {
-            factura.getDetalles().forEach(detalle -> {
-                if (detalle.getProductoId() != null) {
-                    // Reducimos el stock del producto
-                    productoService.actualizarStock(detalle.getProductoId(), -detalle.getCantidad());
-                }
-            });
+        if (factura.getId() == null) {
+            factura.setId(UUID.randomUUID().toString());
+            factura.setFecha(LocalDateTime.now());
         }
         return facturaRepository.save(factura);
     }
 
     public void deleteById(String id) {
         facturaRepository.deleteById(id);
+    }
+
+    public Factura actualizarEstadoFactura(String facturaId, String nuevoEstado) {
+        Factura factura = facturaRepository.findById(facturaId)
+                .orElseThrow(() -> new RuntimeException("Factura no encontrada con ID: " + facturaId));
+
+        factura.setEstado(nuevoEstado);
+        return facturaRepository.save(factura);
+    }
+
+    public List<Factura> findByClienteUsuarioUsername(String username) {
+        return facturaRepository.findByClienteUsuarioUsername(username);
     }
 }
