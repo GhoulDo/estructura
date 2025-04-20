@@ -35,45 +35,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Rutas públicas para autenticación
                         .requestMatchers("/api/auth/**").permitAll()
-
-                        // Permitir acceso público al endpoint de health check
-                        .requestMatchers("/api/health/**").permitAll()
-
-                        // Permisos para servicios - permitir GET para CLIENTE y ADMIN
-                        .requestMatchers(HttpMethod.GET, "/api/servicios/**").hasAnyRole("CLIENTE", "ADMIN")
-                        // Solo ADMIN puede realizar operaciones POST, PUT, PATCH y DELETE
-                        .requestMatchers(HttpMethod.POST, "/api/servicios/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/servicios/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/servicios/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/servicios/**").hasRole("ADMIN")
-
-                        // Permitir operaciones GET para CLIENTE en facturas y detalles
-                        .requestMatchers(HttpMethod.GET, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
-
-                        // Permitir modificaciones en facturas para ambos roles
-                        .requestMatchers(HttpMethod.POST, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/facturas/**").hasAnyRole("CLIENTE", "ADMIN")
-
-                        // Permitir acceso a usuarios para ambos roles
-                        .requestMatchers("/api/usuarios/**").hasAnyRole("CLIENTE", "ADMIN")
-
-                        // Permitir acceso a clientes para ambos roles
-                        .requestMatchers("/api/clientes/**").hasAnyRole("CLIENTE", "ADMIN")
-
-                        // AÑADIDO: Permitir acceso a citas para ambos roles
-                        .requestMatchers(HttpMethod.GET, "/api/citas/**").hasAnyRole("CLIENTE", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/citas/**").hasAnyRole("CLIENTE", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/citas/**").hasAnyRole("CLIENTE", "ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/citas/**").hasAnyRole("CLIENTE", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/citas/**").hasAnyRole("CLIENTE", "ADMIN")
-
-                        // Rutas específicas de admin
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                        // Cualquier otra solicitud requiere autenticación
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
