@@ -1,0 +1,83 @@
+# DOCUMENTACIÓN DE RUTAS DE SEGURIDAD Y VALIDACIÓN
+
+## Mejoras Implementadas
+
+### 1. Manejo de Errores Más Detallado
+- **Descripción:**
+  - Se mejoró el manejo de excepciones en los controladores y servicios relacionados con la autenticación.
+  - Se añadieron logs detallados para registrar errores y advertencias.
+  - Ejemplo de log en `AuthController`:
+    ```java
+    logger.warn("Error de autenticación: {}", e.getMessage());
+    ```
+
+### 2. Expiración de Tokens y Renovación
+- **Descripción:**
+  - Se implementó un mecanismo para invalidar tokens mediante una lista negra en memoria.
+  - Se añadió el método `invalidateToken` en `JwtUtil` y `AuthenticationService`.
+  - Ejemplo de invalidación:
+    ```java
+    jwtUtil.invalidateToken(username);
+    ```
+
+### 3. Roles y Permisos
+- **Descripción:**
+  - Se habilitó el uso de `@PreAuthorize` para validaciones basadas en roles.
+  - Se configuró `@EnableGlobalMethodSecurity(prePostEnabled = true)` en `SecurityConfig`.
+  - Ejemplo de uso en un controlador:
+    ```java
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/usuarios/{id}")
+    public ResponseEntity<Void> deleteUsuario(@PathVariable String id) {
+        usuarioService.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+    ```
+
+### 4. Logout y Revocación de Tokens
+- **Descripción:**
+  - Se añadió un endpoint para logout en `AuthController`.
+  - Ruta: `POST /api/auth/logout`
+  - **Validación:** Solo usuarios autenticados pueden acceder al endpoint.
+  - Ejemplo de implementación:
+    ```java
+    @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> logout(Authentication authentication) {
+        String username = authentication.getName();
+        authenticationService.invalidateToken(username);
+        return ResponseEntity.ok("Logout exitoso. Token invalidado.");
+    }
+    ```
+
+## Validaciones de Seguridad
+
+### Validación de Roles
+- **Descripción:**
+  - Se configuraron permisos específicos para cada ruta en `SecurityConfig`.
+  - Ejemplo:
+    ```java
+    .requestMatchers("/api/servicios/**").hasRole("ADMIN")
+    .requestMatchers("/api/clientes/**").hasAnyRole("CLIENTE", "ADMIN")
+    ```
+
+### Validación de Tokens
+- **Descripción:**
+  - Se validan los tokens JWT en cada solicitud mediante `JwtAuthenticationFilter`.
+  - Ejemplo de validación:
+    ```java
+    if (jwt != null && jwtService.validateJwtToken(jwt)) {
+        String username = jwtService.getUsernameFromJwtToken(jwt);
+        // Configurar autenticación en el contexto de seguridad
+    }
+    ```
+
+### Manejo de Excepciones
+- **Descripción:**
+  - Se manejan excepciones comunes como `ExpiredJwtException`, `UnsupportedJwtException`, y `MalformedJwtException` en `JwtAuthenticationFilter`.
+  - Ejemplo:
+    ```java
+    catch (ExpiredJwtException e) {
+        logger.error("El token JWT ha expirado: {}", e);
+    }
+    ```

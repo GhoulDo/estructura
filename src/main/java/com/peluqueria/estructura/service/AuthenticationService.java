@@ -115,4 +115,8 @@ public class AuthenticationService {
             throw e;
         }
     }
+
+    public void invalidateToken(String username) {
+        jwtUtil.invalidateToken(username);
+    }
 }

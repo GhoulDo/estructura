@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,6 +52,19 @@ public class AuthController {
         } catch (Exception e) {
             logger.error("Error al registrar usuario: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> logout(Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            authenticationService.invalidateToken(username);
+            return ResponseEntity.ok("Logout exitoso. Token invalidado.");
+        } catch (Exception e) {
+            logger.error("Error durante el logout: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body("Error interno del servidor: " + e.getMessage());
         }
     }
 }
