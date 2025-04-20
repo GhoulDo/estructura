@@ -16,9 +16,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class AuthenticationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
 
     private final UsuarioRepository usuarioRepository;
     private final JwtUtil jwtUtil;
@@ -29,8 +33,8 @@ public class AuthenticationService {
     private final ClienteRepository clienteRepository;
 
     public AuthenticationService(
-            UsuarioRepository usuarioRepository, 
-            JwtUtil jwtUtil, 
+            UsuarioRepository usuarioRepository,
+            JwtUtil jwtUtil,
             PasswordEncoder passwordEncoder,
             UsuarioService usuarioService,
             AuthenticationManager authenticationManager,
@@ -47,61 +51,68 @@ public class AuthenticationService {
 
     public AuthResponse login(AuthRequest loginRequest) {
         try {
-            // Buscar usuario directamente en el repositorio
             Usuario usuario = usuarioRepository.findByEmail(loginRequest.getEmail())
-                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con el email proporcionado."));
+                    .orElseThrow(() -> {
+                        logger.warn("Usuario no encontrado con el email: {}", loginRequest.getEmail());
+                        return new IllegalArgumentException("Usuario no encontrado con el email proporcionado.");
+                    });
 
-            // Validar contraseña
             if (!passwordEncoder.matches(loginRequest.getPassword(), usuario.getPassword())) {
+                logger.warn("Contraseña incorrecta para el usuario: {}", loginRequest.getEmail());
                 throw new IllegalArgumentException("La contraseña es incorrecta.");
             }
 
-            // Generar token JWT
             UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getEmail());
             String token = jwtUtil.generateToken(userDetails.getUsername(), userDetails.getAuthorities());
             return new AuthResponse(token);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Credenciales inválidas: " + e.getMessage());
+            logger.warn("Error de autenticación: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
+            logger.error("Error interno al procesar el login: {}", e.getMessage(), e);
             throw new RuntimeException("Error al procesar el login: " + e.getMessage());
         }
     }
 
     public void register(RegisterRequest request) {
-        if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("El usuario ya existe con ese email");
-        }
-        
-        if (usuarioRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("El nombre de usuario ya está en uso");
-        }
-        
-        Usuario usuario = new Usuario();
-        usuario.setUsername(request.getUsername());
-        usuario.setPassword(passwordEncoder.encode(request.getPassword()));
-        usuario.setEmail(request.getEmail());
-        
-        // Normalizar el rol para evitar problemas de case-sensitivity
-        String rol = request.getRol().toUpperCase();
-        if (!rol.equals("ADMIN") && !rol.equals("CLIENTE")) {
-            rol = "CLIENTE";  // Valor por defecto si el rol no es válido
-        }
-        usuario.setRol(rol);
+        try {
+            if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
+                logger.warn("Intento de registro con email ya existente: {}", request.getEmail());
+                throw new RuntimeException("El usuario ya existe con ese email");
+            }
 
-        // Guardar el usuario primero para obtener el ID generado
-        usuario = usuarioRepository.save(usuario);
-        
-        // Si el usuario es un CLIENTE, crear una entrada en la tabla clientes
-        if (rol.equals("CLIENTE")) {
-            Cliente cliente = new Cliente();
-            cliente.setUsuario(usuario);
-            cliente.setNombre(request.getUsername()); // Usar username como nombre inicial
-            cliente.setEmail(request.getEmail());     // Usar el mismo email
-            cliente.setTelefono(""); // Inicializar campo vacío
-            cliente.setDireccion(""); // Inicializar campo vacío
-            cliente.setMascotas(null); // Inicializar mascotas como null
-            
-            clienteRepository.save(cliente);
+            if (usuarioRepository.existsByUsername(request.getUsername())) {
+                logger.warn("Intento de registro con nombre de usuario ya existente: {}", request.getUsername());
+                throw new RuntimeException("El nombre de usuario ya está en uso");
+            }
+
+            Usuario usuario = new Usuario();
+            usuario.setUsername(request.getUsername());
+            usuario.setPassword(passwordEncoder.encode(request.getPassword()));
+            usuario.setEmail(request.getEmail());
+
+            String rol = request.getRol().toUpperCase();
+            if (!rol.equals("ADMIN") && !rol.equals("CLIENTE")) {
+                rol = "CLIENTE";
+            }
+            usuario.setRol(rol);
+
+            usuario = usuarioRepository.save(usuario);
+
+            if (rol.equals("CLIENTE")) {
+                Cliente cliente = new Cliente();
+                cliente.setUsuario(usuario);
+                cliente.setNombre(request.getUsername());
+                cliente.setEmail(request.getEmail());
+                cliente.setTelefono("");
+                cliente.setDireccion("");
+                cliente.setMascotas(null);
+
+                clienteRepository.save(cliente);
+            }
+        } catch (Exception e) {
+            logger.error("Error al registrar usuario: {}", e.getMessage(), e);
+            throw e;
         }
     }
 }

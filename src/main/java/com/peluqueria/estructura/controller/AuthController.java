@@ -8,6 +8,8 @@ import com.peluqueria.estructura.service.AuthenticationService;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 public class AuthController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
     @Autowired
     private AuthenticationService authenticationService;
 
@@ -28,8 +32,10 @@ public class AuthController {
             AuthResponse response = authenticationService.login(loginRequest);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
+            logger.warn("Error de autenticación: {}", e.getMessage());
             return ResponseEntity.badRequest().body("Credenciales inválidas: " + e.getMessage());
         } catch (Exception e) {
+            logger.error("Error interno en el login: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Error interno del servidor: " + e.getMessage());
         }
     }
@@ -42,6 +48,7 @@ public class AuthController {
             response.put("message", "Usuario registrado correctamente");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            logger.error("Error al registrar usuario: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
