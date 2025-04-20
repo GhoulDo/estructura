@@ -62,10 +62,13 @@
 
         <!-- Lombok (para reducir boilerplate code) -->
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
+    <groupId>org.projectlombok</groupId>
+    <artifactId>lombok</artifactId>
+    <version>1.18.30</version>
+    <scope>provided</scope>
+    </dependency>
+
+
 
         <!-- Spring Boot Starter Validation -->
         <dependency>

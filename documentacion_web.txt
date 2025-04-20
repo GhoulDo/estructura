@@ -1,0 +1,527 @@
+# DOCUMENTACIÓN PARA DESARROLLO DE PÁGINA WEB - PELUQUERÍA CANINA SPA
+
+Fecha: 19 de abril de 2025
+
+---
+
+## 1. ESTRUCTURA DE LA BASE DE DATOS (MongoDB)
+
+### Entidades principales y relaciones
+
+- **Usuario**
+  - id (String)
+  - username (String, único)
+  - password (String, encriptada)
+  - email (String, único)
+  - rol (String: 'ADMIN' o 'CLIENTE')
+
+- **Rol**
+  - id (String)
+  - nombre (String, único)
+
+- **Cliente**
+  - id (String)
+  - nombre (String)
+  - telefono (String)
+  - email (String)
+  - direccion (String)
+  - usuario (DBRef a Usuario)
+  - mascotas (Lista de DBRef a Mascota)
+
+- **Mascota**
+  - id (String)
+  - nombre (String)
+  - tipo (String)
+  - raza (String)
+  - edad (int)
+  - cliente (DBRef a Cliente)
+
+- **Servicio**
+  - id (String)
+  - nombre (String)
+  - duracion (int, minutos)
+  - precio (BigDecimal)
+
+- **Producto**
+  - id (String)
+  - nombre (String)
+  - tipo (String)
+  - precio (BigDecimal)
+  - stock (int)
+
+- **Cita**
+  - id (String)
+  - mascota (DBRef a Mascota)
+  - servicio (DBRef a Servicio)
+  - fecha (LocalDate)
+  - hora (LocalTime)
+  - estado (String)
+  - facturada (boolean)
+  - facturaId (String)
+
+- **Factura**
+  - id (String)
+  - cliente (DBRef a Cliente)
+  - fecha (LocalDateTime)
+  - total (BigDecimal)
+  - estado (String)
+  - detalles (Lista de DetalleFactura embebidos)
+
+- **DetalleFactura** (embebido en Factura)
+  - id (String)
+  - productoId (String)
+  - productoNombre (String)
+  - servicioId (String)
+  - servicioNombre (String)
+  - cantidad (int)
+  - precioUnitario (BigDecimal)
+  - subtotal (BigDecimal)
+
+**Relaciones clave:**
+- Usuario 1:1 Cliente
+- Cliente 1:N Mascotas
+- Mascota N:1 Cliente
+- Cita N:1 Mascota, N:1 Servicio
+- Factura N:1 Cliente, 1:N DetalleFactura
+
+---
+
+## 2. CUERPOS DE RUTAS (JSON)
+
+### Autenticación
+- **Login:**
+```json
+{
+  "username": "usuario",
+  "password": "contraseña"
+}
+```
+- **Registro:**
+```json
+{
+  "username": "usuario",
+  "password": "contraseña",
+  "email": "usuario@ejemplo.com",
+  "nombre": "Nombre Completo",
+  "telefono": "1234567890",
+  "direccion": "Dirección"
+}
+```
+
+### Mascotas
+- **Crear/Actualizar:**
+```json
+{
+  "nombre": "Bobby",
+  "tipo": "Perro",
+  "raza": "Golden Retriever",
+  "edad": 3,
+  "clienteId": "id_cliente"
+}
+```
+
+### Citas
+- **Crear/Actualizar:**
+```json
+{
+  "mascotaId": "id_mascota",
+  "servicioId": "id_servicio",
+  "fecha": "2025-04-20",
+  "hora": "14:30:00",
+  "estado": "PROGRAMADA",
+  "notas": "Primera visita"
+}
+```
+
+### Facturas
+- **Crear:**
+```json
+{
+  "clienteId": "id_cliente",
+  "fecha": "2025-04-16",
+  "items": [
+    { "tipo": "SERVICIO", "itemId": "id_servicio", "cantidad": 1, "precio": 25.00 },
+    { "tipo": "PRODUCTO", "itemId": "id_producto", "cantidad": 2, "precio": 15.00 }
+  ],
+  "metodoPago": "TARJETA",
+  "notas": "Factura por servicios y productos"
+}
+```
+
+### Productos y Servicios
+- **Crear Producto:**
+```json
+{
+  "nombre": "Champú para perros",
+  "tipo": "Higiene",
+  "precio": 12.50,
+  "stock": 100
+}
+```
+- **Crear Servicio:**
+```json
+{
+  "nombre": "Corte de pelo",
+  "duracion": 60,
+  "precio": 30.00
+}
+```
+
+---
+
+## 3. ROLES Y FUNCIONALIDADES EN LA WEB
+
+### Cliente
+- Registro y login
+- Gestión de perfil (ver/editar datos, cambiar contraseña)
+- Gestión de mascotas (listar, crear, editar, eliminar)
+- Solicitud y gestión de citas (crear, ver, cancelar, historial)
+- Consulta de servicios y productos
+- Visualización de facturas e historial de pagos
+- Descarga de facturas en PDF
+
+### Administrador
+- Todo lo anterior, más:
+- Gestión de usuarios (listar, crear, editar, eliminar)
+- Gestión de clientes (ver todos, editar, eliminar)
+- Gestión de servicios y productos (CRUD completo)
+- Gestión avanzada de citas (ver todas, filtrar, modificar, cancelar)
+- Facturación avanzada (crear, modificar, anular facturas, reportes)
+- Panel de estadísticas y reportes
+- Gestión de inventario (productos)
+- Configuración global del sistema
+
+---
+
+## 4. ESTRUCTURA Y FLUJO DE LA PÁGINA WEB
+
+### Páginas principales
+
+1. **Login y Registro**
+   - Formulario de acceso y registro
+   - Recuperación de contraseña
+
+2. **Dashboard**
+   - Vista general con resumen de próximas citas, mascotas, servicios destacados
+   - Diferente para cliente y admin
+
+3. **Gestión de Mascotas**
+   - Listado de mascotas
+   - Formulario para agregar/editar mascota
+   - Detalle de mascota (historial de servicios)
+
+4. **Gestión de Citas**
+   - Calendario y lista de citas
+   - Crear nueva cita (selección de mascota, servicio, fecha/hora)
+   - Detalle de cita (estado, opciones de cancelar, ver factura)
+
+5. **Catálogo de Servicios y Productos**
+   - Listado y detalle de servicios
+   - Listado y detalle de productos
+
+6. **Facturación**
+   - Listado de facturas
+   - Detalle de factura (descarga PDF)
+   - Crear factura (admin)
+
+7. **Gestión de Usuarios y Clientes (admin)**
+   - Listado de usuarios/clientes
+   - Formulario de edición/creación
+   - Detalle de cliente (mascotas, citas, facturas)
+
+8. **Panel de Administración (admin)**
+   - Estadísticas de negocio
+   - Reportes de ventas, servicios, clientes frecuentes
+   - Gestión de inventario
+   - Configuración del sistema
+
+9. **Perfil y Configuración**
+   - Editar datos personales
+   - Cambiar contraseña
+   - Preferencias de notificaciones
+   - Cerrar sesión
+
+---
+
+## 5. RECOMENDACIONES PARA EL FRONTEND WEB
+
+- Usar framework moderno: React, Angular o Vue.js (recomendado: React + TypeScript)
+- Gestión de estado: Redux, Zustand, Context API o Pinia (Vue)
+- Cliente HTTP: Axios o Fetch API
+- Manejo seguro de JWT: Guardar en HttpOnly cookies o localStorage (con precaución)
+- Rutas protegidas según rol (cliente/admin)
+- Componentes reutilizables para formularios, tablas, modales
+- Validación de formularios (Yup, Zod, Vuelidate)
+- Diseño responsivo (Material UI, Ant Design, Bootstrap, Tailwind)
+- Accesibilidad y buenas prácticas UX
+- Internacionalización (i18n) si se requiere
+- Testing: Unitario (Jest, Testing Library), E2E (Cypress, Playwright)
+
+---
+
+## 6. EJEMPLO DE ESTRUCTURA DE PROYECTO (React)
+
+```
+src/
+  api/                # Lógica de conexión con la API
+  components/         # Componentes reutilizables
+  features/           # Módulos por dominio (auth, citas, mascotas, etc)
+  hooks/              # Custom hooks
+  pages/              # Páginas principales
+  routes/             # Definición de rutas y protección por rol
+  store/              # Gestión de estado global
+  styles/             # Estilos globales y temas
+  utils/              # Utilidades generales
+  App.tsx             # Componente raíz
+  main.tsx            # Punto de entrada
+```
+
+---
+
+## 7. FLUJO DE USUARIO (CLIENTE)
+
+1. Login/Registro
+2. Dashboard con resumen
+3. Gestión de mascotas
+4. Solicitud y gestión de citas
+5. Consulta de servicios/productos
+6. Visualización y descarga de facturas
+7. Edición de perfil y cierre de sesión
+
+## 8. FLUJO DE USUARIO (ADMIN)
+
+1. Login
+2. Dashboard administrativo
+3. Gestión de usuarios/clientes
+4. Gestión de servicios/productos
+5. Gestión avanzada de citas
+6. Facturación y reportes
+7. Inventario y configuración
+8. Edición de perfil y cierre de sesión
+
+---
+
+## 9. SEGURIDAD Y BUENAS PRÁCTICAS
+
+- Todas las peticiones deben incluir el token JWT en el header Authorization
+- Proteger rutas sensibles según el rol
+- Validar datos en frontend y backend
+- Manejar expiración de sesión y redirección a login
+- No exponer datos sensibles en el frontend
+- Usar HTTPS siempre
+
+---
+
+## 10. RECURSOS Y REFERENCIAS
+
+- [Documentación oficial de la API](DOCUMENTACION_API_PARA_APP_MOVIL.txt)
+- [Ejemplo de cuerpos de rutas](cuerpo_rutas.txt)
+- [Estructura de base de datos](basedatos.txt)
+- [Guía de despliegue y configuración backend](DESPLIEGUE_EN_RENDER.txt)
+
+---
+
+# RUTAS COMPLETAS DE LA API EN RENDER
+
+**URL base:**  
+https://peluqueriacanina-api.onrender.com/api
+
+---
+
+## AUTENTICACIÓN
+
+- POST   /auth/register  
+  https://peluqueriacanina-api.onrender.com/api/auth/register
+
+- POST   /auth/login  
+  https://peluqueriacanina-api.onrender.com/api/auth/login
+
+- GET    /auth/profile  
+  https://peluqueriacanina-api.onrender.com/api/auth/profile
+
+- PUT    /auth/password  
+  https://peluqueriacanina-api.onrender.com/api/auth/password
+
+---
+
+## USUARIOS (ADMIN)
+
+- GET    /usuarios  
+  https://peluqueriacanina-api.onrender.com/api/usuarios
+
+- GET    /usuarios/{id}  
+  https://peluqueriacanina-api.onrender.com/api/usuarios/{id}
+
+- DELETE /usuarios/{id}  
+  https://peluqueriacanina-api.onrender.com/api/usuarios/{id}
+
+---
+
+## CLIENTES
+
+- GET    /clientes  
+  https://peluqueriacanina-api.onrender.com/api/clientes
+
+- GET    /clientes/{id}  
+  https://peluqueriacanina-api.onrender.com/api/clientes/{id}
+
+- GET    /clientes/actual  
+  https://peluqueriacanina-api.onrender.com/api/clientes/actual
+
+- POST   /clientes  
+  https://peluqueriacanina-api.onrender.com/api/clientes
+
+- PUT    /clientes/{id}  
+  https://peluqueriacanina-api.onrender.com/api/clientes/{id}
+
+- DELETE /clientes/{id}  
+  https://peluqueriacanina-api.onrender.com/api/clientes/{id}
+
+---
+
+## MASCOTAS
+
+- GET    /mascotas  
+  https://peluqueriacanina-api.onrender.com/api/mascotas
+
+- GET    /mascotas/{id}  
+  https://peluqueriacanina-api.onrender.com/api/mascotas/{id}
+
+- GET    /mascotas/cliente/{clienteId}  
+  https://peluqueriacanina-api.onrender.com/api/mascotas/cliente/{clienteId}
+
+- POST   /mascotas  
+  https://peluqueriacanina-api.onrender.com/api/mascotas
+
+- PUT    /mascotas/{id}  
+  https://peluqueriacanina-api.onrender.com/api/mascotas/{id}
+
+- DELETE /mascotas/{id}  
+  https://peluqueriacanina-api.onrender.com/api/mascotas/{id}
+
+---
+
+## SERVICIOS
+
+- GET    /servicios  
+  https://peluqueriacanina-api.onrender.com/api/servicios
+
+- GET    /servicios/{id}  
+  https://peluqueriacanina-api.onrender.com/api/servicios/{id}
+
+- GET    /servicios/categoria/{categoria}  
+  https://peluqueriacanina-api.onrender.com/api/servicios/categoria/{categoria}
+
+- POST   /servicios  
+  https://peluqueriacanina-api.onrender.com/api/servicios
+
+- PUT    /servicios/{id}  
+  https://peluqueriacanina-api.onrender.com/api/servicios/{id}
+
+- DELETE /servicios/{id}  
+  https://peluqueriacanina-api.onrender.com/api/servicios/{id}
+
+---
+
+## PRODUCTOS
+
+- GET    /productos  
+  https://peluqueriacanina-api.onrender.com/api/productos
+
+- GET    /productos/{id}  
+  https://peluqueriacanina-api.onrender.com/api/productos/{id}
+
+- GET    /productos/categoria/{categoria}  
+  https://peluqueriacanina-api.onrender.com/api/productos/categoria/{categoria}
+
+- POST   /productos  
+  https://peluqueriacanina-api.onrender.com/api/productos
+
+- PUT    /productos/{id}  
+  https://peluqueriacanina-api.onrender.com/api/productos/{id}
+
+- DELETE /productos/{id}  
+  https://peluqueriacanina-api.onrender.com/api/productos/{id}
+
+---
+
+## CITAS
+
+- GET    /citas  
+  https://peluqueriacanina-api.onrender.com/api/citas
+
+- GET    /citas/{id}  
+  https://peluqueriacanina-api.onrender.com/api/citas/{id}
+
+- GET    /citas/mascota/{mascotaId}  
+  https://peluqueriacanina-api.onrender.com/api/citas/mascota/{mascotaId}
+
+- GET    /citas/hoy  
+  https://peluqueriacanina-api.onrender.com/api/citas/hoy
+
+- GET    /citas/fecha/{fecha}  
+  https://peluqueriacanina-api.onrender.com/api/citas/fecha/{fecha}
+
+- POST   /citas  
+  https://peluqueriacanina-api.onrender.com/api/citas
+
+- PUT    /citas/{id}  
+  https://peluqueriacanina-api.onrender.com/api/citas/{id}
+
+- DELETE /citas/{id}  
+  https://peluqueriacanina-api.onrender.com/api/citas/{id}
+
+---
+
+## FACTURAS
+
+- GET    /facturas  
+  https://peluqueriacanina-api.onrender.com/api/facturas
+
+- GET    /facturas/{id}  
+  https://peluqueriacanina-api.onrender.com/api/facturas/{id}
+
+- GET    /facturas/cliente/{clienteId}  
+  https://peluqueriacanina-api.onrender.com/api/facturas/cliente/{clienteId}
+
+- POST   /facturas  
+  https://peluqueriacanina-api.onrender.com/api/facturas
+
+- PUT    /facturas/{id}  
+  https://peluqueriacanina-api.onrender.com/api/facturas/{id}
+
+- DELETE /facturas/{id}  
+  https://peluqueriacanina-api.onrender.com/api/facturas/{id}
+
+---
+
+## FACTURACIÓN UNIFICADA
+
+- POST   /facturacion-unificada/facturar-cita/{citaId}  
+  https://peluqueriacanina-api.onrender.com/api/facturacion-unificada/facturar-cita/{citaId}
+
+- PUT    /facturacion-unificada/agregar-productos/{facturaId}  
+  https://peluqueriacanina-api.onrender.com/api/facturacion-unificada/agregar-productos/{facturaId}
+
+- PUT    /facturacion-unificada/pagar/{facturaId}  
+  https://peluqueriacanina-api.onrender.com/api/facturacion-unificada/pagar/{facturaId}
+
+- GET    /facturacion-unificada/cliente/{clienteId}  
+  https://peluqueriacanina-api.onrender.com/api/facturacion-unificada/cliente/{clienteId}
+
+---
+
+## HEALTH CHECK
+
+- GET    /health  
+  https://peluqueriacanina-api.onrender.com/api/health
+
+---
+
+**IMPORTANTE:** Todas las rutas (excepto login, register y health) requieren el header:
+
+    Authorization: Bearer {token}
+
+El token JWT se obtiene al hacer login y debe ser enviado en cada petición protegida.
+
+Para ejemplos de cuerpos JSON y respuestas, consulta el archivo cuerpo_rutas.txt o la sección correspondiente en este documento.

@@ -1,6 +1,9 @@
 package com.peluqueria.estructura.config;
 
 import com.peluqueria.estructura.service.JwtService;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,8 +47,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+        } catch (ExpiredJwtException e) {
+            logger.error("El token JWT ha expirado: {}", e);
+        } catch (UnsupportedJwtException e) {
+            logger.error("El token JWT no es compatible: {}", e);
+        } catch (MalformedJwtException e) {
+            logger.error("El token JWT está malformado: {}", e);
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}", e);
+            logger.error("Error al establecer la autenticación del usuario: {}", e);
         }
 
         filterChain.doFilter(request, response);

@@ -1,0 +1,498 @@
+# ESPECIFICACIÓN DE APLICACIÓN MÓVIL - PELUQUERÍA CANINA SPA
+
+## INFORMACIÓN GENERAL
+
+**Nombre:** PeluCanina App
+**Tecnología:** Flutter/Dart
+**Plataformas:** Android e iOS (único código fuente)
+**Arquitectura:** Clean Architecture + Provider/Bloc para gestión de estado
+**Versión Flutter:** ≥ 3.19.0
+**Mínimo SDK Android:** 21 (Android 5.0)
+**Mínimo iOS:** iOS 12.0
+
+## DESCRIPCIÓN GENERAL
+
+La aplicación "PeluCanina" será una herramienta completa para la gestión de una peluquería canina, permitiendo a los clientes gestionar sus mascotas, programar citas y consultar servicios, mientras que los administradores podrán gestionar todo el negocio desde la misma aplicación con una interfaz adaptada a sus necesidades.
+
+La aplicación conectará con el backend REST API ya desarrollado y utilizará el sistema de autenticación JWT implementado.
+
+## PRINCIPALES DEPENDENCIAS DE FLUTTER
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  # Gestión de estado
+  provider: ^6.1.1
+  flutter_bloc: ^8.1.3
+  
+  # Navegación
+  go_router: ^12.1.1
+  
+  # Persistencia local
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0 # Para almacenar tokens JWT de forma segura
+  hive: ^2.2.3 # Para almacenamiento local
+  hive_flutter: ^1.1.0
+  sqflite: ^2.3.0 # Para caché más compleja
+  
+  # Networking
+  dio: ^5.3.3 # Cliente HTTP con interceptores
+  jwt_decoder: ^2.0.1
+  
+  # UI Components
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.18.1
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.0
+  shimmer: ^3.0.0 # Loading placeholders
+  lottie: ^2.7.0 # Animaciones
+  image_picker: ^1.0.4
+  flutter_form_builder: ^9.1.1
+  form_builder_validators: ^9.1.0
+  
+  # Fechas y calendario
+  table_calendar: ^3.0.9
+  
+  # Notificaciones Push
+  firebase_core: ^2.24.2
+  firebase_messaging: ^14.7.10
+  flutter_local_notifications: ^16.2.0
+  
+  # Generadores de PDF
+  pdf: ^3.10.4
+  printing: ^5.11.1
+  
+  # Utilidades
+  url_launcher: ^6.2.2
+  connectivity_plus: ^5.0.2
+  package_info_plus: ^4.2.0
+  device_info_plus: ^9.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1
+  mockito: ^5.4.3
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.6
+```
+
+## ESTRUCTURA DE LA APLICACIÓN
+
+```
+lib/
+├── app.dart                  # Widget principal de la app
+├── main.dart                 # Punto de entrada de la app
+├── core/                     # Funcionalidad central/compartida
+│   ├── config/               # Configuraciones de la app
+│   ├── constants/            # Constantes de la app
+│   ├── errors/               # Manejo de errores
+│   ├── network/              # Cliente http, interceptores
+│   ├── storage/              # Almacenamiento local
+│   ├── theme/                # Temas y estilos
+│   └── utils/                # Utilidades
+├── data/                     # Capa de datos
+│   ├── datasources/          # Fuentes de datos (API, local)
+│   ├── models/               # Modelos de datos
+│   └── repositories/         # Implementación de repositorios
+├── domain/                   # Lógica de negocio
+│   ├── entities/             # Entidades de dominio
+│   ├── repositories/         # Interfaces de repositorios
+│   └── usecases/             # Casos de uso
+├── presentation/             # Capa de UI
+│   ├── common_widgets/       # Widgets compartidos
+│   ├── pages/                # Pantallas de la app
+│   │   ├── admin/            # Pantallas para administradores
+│   │   ├── client/           # Pantallas para clientes
+│   │   └── shared/           # Pantallas compartidas
+│   ├── providers/            # Proveedores de estado
+│   └── router/               # Rutas de la app
+└── di_container.dart         # Inyección de dependencias
+```
+
+## ROLES Y FUNCIONALIDADES
+
+### 1. COMÚN (para todos los usuarios)
+
+- **Autenticación**
+  - Inicio de sesión
+  - Registro de nuevos usuarios (como clientes)
+  - Recuperación de contraseña
+
+- **Perfil**
+  - Ver y editar información personal
+  - Cambiar contraseña
+  - Cerrar sesión
+
+### 2. CLIENTE
+
+- **Gestión de Mascotas**
+  - Ver lista de mascotas
+  - Añadir nueva mascota
+  - Editar información de mascota
+  - Ver historial de servicios por mascota
+
+- **Gestión de Citas**
+  - Solicitar nueva cita
+  - Ver citas programadas
+  - Cancelar citas (con restricciones)
+  - Ver historial de citas pasadas
+
+- **Catálogo**
+  - Ver servicios disponibles
+  - Ver productos disponibles para compra
+
+- **Facturación**
+  - Ver historial de facturas
+  - Visualizar detalle de cada factura
+  - Descargar factura en PDF
+
+- **Notificaciones**
+  - Recordatorios de citas
+  - Promociones especiales
+
+### 3. ADMINISTRADOR
+
+Además de las funcionalidades de cliente, tendrá acceso a:
+
+- **Gestión de Usuarios**
+  - Ver todos los clientes
+  - Buscar clientes por nombre, email, etc.
+  - Editar información de clientes
+  - Eliminar clientes
+
+- **Gestión de Citas**
+  - Ver todas las citas programadas
+  - Filtrar citas por fecha, estado, etc.
+  - Confirmar citas
+  - Marcar citas como completadas
+  - Cancelar citas
+  - Ver estadísticas de citas
+
+- **Gestión de Servicios**
+  - Añadir nuevos servicios
+  - Editar servicios existentes
+  - Eliminar servicios
+
+- **Gestión de Productos**
+  - Añadir nuevos productos
+  - Editar productos existentes
+  - Actualizar stock
+  - Eliminar productos
+
+- **Facturación**
+  - Crear facturas a partir de citas
+  - Añadir productos a facturas
+  - Marcar facturas como pagadas
+  - Ver todas las facturas
+  - Ver estadísticas de ventas
+
+## FLUJO DE PANTALLAS
+
+### CLIENTE
+
+1. **Splash Screen** → **Onboarding** (primera instalación) → **Login/Registro**
+
+2. **Dashboard Cliente**
+   - Resumen de próximas citas
+   - Acceso rápido a mascotas
+   - Acceso a servicios destacados
+
+3. **Flujo de Mascotas**
+   - Lista de mascotas → Detalle de mascota → Editar mascota
+   - Lista de mascotas → Añadir mascota
+
+4. **Flujo de Citas**
+   - Lista de citas → Detalle de cita → Cancelar cita
+   - Solicitar cita → Seleccionar mascota → Seleccionar servicio → Seleccionar fecha/hora → Confirmar cita
+
+5. **Flujo de Catálogo**
+   - Lista de servicios → Detalle de servicio
+   - Lista de productos → Detalle de producto
+
+6. **Flujo de Facturas**
+   - Lista de facturas → Detalle de factura → Ver PDF / Descargar
+
+7. **Flujo de Perfil**
+   - Ver perfil → Editar perfil
+   - Cambiar contraseña
+   - Configuración de notificaciones
+   - Cerrar sesión
+
+### ADMINISTRADOR
+
+1. **Splash Screen** → **Login**
+
+2. **Dashboard Admin**
+   - Resumen de citas del día
+   - Estadísticas rápidas de ventas
+   - Indicadores de estado del negocio
+
+3. **Flujo de Gestión de Citas**
+   - Calendario/Lista de citas → Detalle de cita → Confirmar/Completar/Cancelar
+   - Calendario/Lista de citas → Crear cita
+
+4. **Flujo de Gestión de Clientes**
+   - Lista de clientes → Detalle de cliente → Editar cliente
+   - Lista de clientes → Detalle de cliente → Ver mascotas del cliente
+   - Lista de clientes → Añadir cliente
+
+5. **Flujo de Gestión de Servicios**
+   - Lista de servicios → Detalle de servicio → Editar servicio
+   - Lista de servicios → Añadir servicio
+
+6. **Flujo de Gestión de Productos**
+   - Lista de productos → Detalle de producto → Editar producto
+   - Lista de productos → Añadir producto
+   - Gestión de inventario → Actualizar stock
+
+7. **Flujo de Facturación**
+   - Lista de facturas → Detalle de factura → Marcar como pagada
+   - Lista de citas completadas → Seleccionar cita → Crear factura → Añadir productos → Finalizar
+   - Reportes de ventas (diarias, semanales, mensuales)
+
+8. **Flujo de Configuración**
+   - Configurar horario de atención
+   - Configurar notificaciones
+   - Administrar usuarios de sistema
+
+## DISEÑO Y EXPERIENCIA DE USUARIO
+
+- **Tema Principal**
+  - Colores primarios: Tonos azules y verdes pastel (asociados con cuidado de mascotas)
+  - Tipografía: Friendly sans-serif como Poppins o Montserrat
+  - Iconografía: Redondeada y amigable
+
+- **Características de UI**
+  - Modo claro/oscuro
+  - Animaciones sutiles para transiciones
+  - Soporte para Material You (Android 12+)
+  - Layouts adaptables para diferentes tamaños de pantalla
+
+- **Funcionalidades UX**
+  - Pull-to-refresh en listas
+  - Lazy loading para optimizar rendimiento
+  - Skeleton screens durante carga
+  - Feedback táctil en interacciones importantes
+  - Mensajes de confirmación para acciones críticas
+
+## GESTIÓN DE SESIÓN Y SEGURIDAD
+
+- Almacenamiento seguro de token JWT usando Flutter Secure Storage
+- Expiración de sesión con manejo automático de refresco
+- Encriptación de datos sensibles almacenados localmente
+- Validación de inputs en formularios
+- Protección contra inyección de código
+- Opción de autenticación biométrica (huella/Face ID)
+
+## CONECTIVIDAD Y SINCRONIZACIÓN
+
+- Detección de estado de conexión
+- Modo offline para visualizar datos previamente cargados
+- Cola de operaciones para sincronizar cuando se recupere la conexión
+- Política de reintentos para operaciones fallidas
+
+## NOTIFICACIONES
+
+- Notificaciones push para:
+  - Recordatorios de citas (24h y 1h antes)
+  - Confirmación de citas programadas
+  - Promociones especiales
+  - Actualizaciones de estado de citas
+  - Facturación completada
+
+- Notificaciones en-app para:
+  - Acciones completadas
+  - Cambios de estado
+  - Recordatorios
+
+## PANTALLAS DETALLADAS
+
+### Pantallas para Clientes
+
+1. **Login/Registro**
+   - Campos: Email, contraseña
+   - Opción de recuperar contraseña
+   - Opción de registro para nuevos usuarios
+   - Integración con biometría (opcional)
+
+2. **Dashboard Cliente**
+   - Sección "Próximas citas" con contador y citas más inmediatas
+   - Sección "Mis mascotas" con fotos y acceso rápido
+   - Sección "Servicios destacados"
+   - Barra de navegación inferior con: Inicio, Citas, Mascotas, Perfil
+
+3. **Lista de Mascotas**
+   - Vista en tarjetas con foto, nombre y raza
+   - Botón para añadir nueva mascota
+   - Al pulsar, navega al detalle de mascota
+
+4. **Detalle de Mascota**
+   - Foto grande, nombre, raza, edad
+   - Historial de servicios recibidos
+   - Botones para editar o eliminar
+   - Botón para programar nueva cita para esta mascota
+
+5. **Solicitud de Cita**
+   - Paso 1: Selección de mascota
+   - Paso 2: Selección de servicio con precios
+   - Paso 3: Selección de fecha en calendario
+   - Paso 4: Selección de hora disponible
+   - Paso 5: Confirmación con resumen
+
+6. **Lista de Citas**
+   - Filtros por estado (programadas, completadas, canceladas)
+   - Visualización en formato calendario o lista
+   - Indicadores de color según estado
+   - Botón para crear nueva cita
+
+7. **Detalle de Cita**
+   - Información completa de la cita
+   - Estado actual
+   - Mascota y servicio asociados
+   - Opciones para cancelar (si aplica)
+   - Si está completada, enlace a factura asociada
+
+8. **Lista de Facturas**
+   - Filtros por fecha/estado
+   - Muestra: número, fecha, importe, estado
+   - Al pulsar, muestra el detalle de factura
+
+9. **Detalle de Factura**
+   - Datos completos con desglose de servicios/productos
+   - Subtotales y total
+   - Estado de pago
+   - Botón para descargar PDF
+
+10. **Perfil de Cliente**
+    - Datos personales
+    - Opciones para editar perfil
+    - Cambiar contraseña
+    - Preferencias de notificaciones
+    - Cerrar sesión
+
+### Pantallas para Administradores
+
+1. **Dashboard Admin**
+   - Resumen de citas del día
+   - Indicadores de rendimiento (citas completadas, pendientes)
+   - Gráfica de ingresos (día/semana/mes)
+   - Acceso rápido a funciones principales
+   - Alertas de stock bajo
+
+2. **Gestión de Citas**
+   - Vista calendario con código de colores
+   - Vista lista con filtros avanzados
+   - Opciones para crear, confirmar, completar o cancelar citas
+   - Búsqueda por cliente/mascota
+
+3. **Panel de Cliente**
+   - Información completa del cliente
+   - Lista de sus mascotas
+   - Historial de citas y facturas
+   - Opciones para editar/eliminar
+
+4. **Gestión de Servicios**
+   - Lista filtrable de servicios
+   - Edición de precios y duración
+   - Activar/desactivar servicios
+   - Añadir nuevos servicios
+
+5. **Gestión de Productos**
+   - Lista filtrable de productos
+   - Control de inventario
+   - Alertas de stock bajo
+   - Edición de precios
+   - Añadir nuevos productos
+
+6. **Facturación Avanzada**
+   - Crear factura desde cita o manualmente
+   - Añadir múltiples servicios y productos
+   - Aplicar descuentos
+   - Seleccionar método de pago
+   - Finalizar y guardar/imprimir
+
+7. **Reportes**
+   - Ventas por período
+   - Servicios más populares
+   - Clientes frecuentes
+   - Exportar a Excel/PDF
+
+## IMPLEMENTACIÓN Y DISTRIBUCIÓN
+
+1. **Desarrollo**
+   - Metodología ágil con iteraciones de 2 semanas
+   - Testing automático para componentes críticos
+   - Implementación de CI/CD para builds automáticos
+
+2. **Testing**
+   - Pruebas unitarias para lógica de negocio
+   - Pruebas de widget para componentes UI
+   - Testing de integración para flujos completos
+   - Beta testing con usuarios reales
+
+3. **Despliegue**
+   - Generación de APK para distribución directa
+   - Publicación en Google Play Store
+   - Publicación en Apple App Store
+   - Sistema de actualizaciones in-app
+
+4. **Mantenimiento**
+   - Monitoreo de errores con Firebase Crashlytics
+   - Análisis de uso con Firebase Analytics
+   - Actualización periódica de dependencias
+   - Plan de mejora continua basado en feedback
+
+## REQUISITOS TÉCNICOS MÍNIMOS
+
+- **Dispositivo Android:**
+  - Android 5.0 (API 21) o superior
+  - 2GB RAM mínimo
+  - 100MB espacio disponible
+
+- **Dispositivo iOS:**
+  - iOS 12.0 o superior
+  - iPhone 6s o posterior
+  - 100MB espacio disponible
+
+- **Permisos requeridos:**
+  - Cámara (opcional, para fotos de mascotas)
+  - Almacenamiento (para guardar PDFs)
+  - Notificaciones push
+  - Internet
+  - Calendario (opcional, para añadir citas al calendario)
+
+## TIMELINE ESTIMADO
+
+1. **Fase de Diseño**: 2 semanas
+   - Wireframes y mockups
+   - Diseño de UI/UX
+   - Definición de arquitectura
+
+2. **Desarrollo Core**: 6 semanas
+   - Autenticación y gestión de usuarios
+   - Módulo de mascotas
+   - Módulo de citas
+   - Módulo de catálogo
+
+3. **Desarrollo Avanzado**: 4 semanas
+   - Módulo de facturación
+   - Funcionalidades específicas de administrador
+   - Reportes y estadísticas
+
+4. **Testing y Refinamiento**: 2 semanas
+   - Pruebas de usabilidad
+   - Corrección de bugs
+   - Optimización de rendimiento
+
+5. **Lanzamiento y Seguimiento**: 2 semanas
+   - Despliegue en tiendas
+   - Monitoreo post-lanzamiento
+   - Resolución de problemas iniciales
+
+**Tiempo Total**: 16 semanas (4 meses) hasta la primera versión estable

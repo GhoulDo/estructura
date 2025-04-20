@@ -23,12 +23,14 @@ public class AuthController {
     private AuthenticationService authenticationService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest loginRequest) {
+    public ResponseEntity<?> login(@RequestBody AuthRequest loginRequest) {
         try {
             AuthResponse response = authenticationService.login(loginRequest);
             return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Credenciales inválidas: " + e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(500).body("Error interno del servidor: " + e.getMessage());
         }
     }
 

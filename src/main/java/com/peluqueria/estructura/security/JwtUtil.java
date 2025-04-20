@@ -66,11 +66,21 @@ public class JwtUtil {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            throw new IllegalArgumentException("El token JWT ha expirado.");
+        } catch (UnsupportedJwtException e) {
+            throw new IllegalArgumentException("El token JWT no es compatible.");
+        } catch (MalformedJwtException e) {
+            throw new IllegalArgumentException("El token JWT está malformado.");
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Error al procesar el token JWT.");
+        }
     }
 
     public boolean isTokenValid(String token, String username) {
