@@ -47,19 +47,23 @@ public class AuthenticationService {
 
     public AuthResponse login(AuthRequest loginRequest) {
         try {
-            // Validar credenciales
-            UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getEmail());
-            if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
-                throw new IllegalArgumentException("Credenciales incorrectas.");
+            // Buscar usuario directamente en el repositorio
+            Usuario usuario = usuarioRepository.findByEmail(loginRequest.getEmail())
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con el email proporcionado."));
+
+            // Validar contraseña
+            if (!passwordEncoder.matches(loginRequest.getPassword(), usuario.getPassword())) {
+                throw new IllegalArgumentException("La contraseña es incorrecta.");
             }
 
             // Generar token JWT
+            UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getEmail());
             String token = jwtUtil.generateToken(userDetails.getUsername(), userDetails.getAuthorities());
             return new AuthResponse(token);
-        } catch (UsernameNotFoundException e) {
-            throw new IllegalArgumentException("Usuario no encontrado.");
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Credenciales incorrectas: " + e.getMessage());
+            throw new IllegalArgumentException("Credenciales inválidas: " + e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException("Error al procesar el login: " + e.getMessage());
         }
     }
 
