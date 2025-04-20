@@ -45,5 +45,16 @@ public class MascotaService {
     public void deleteById(String id) {
         mascotaRepository.deleteById(id);
     }
-}
 
+    public void saveFoto(String id, byte[] foto) {
+        Mascota mascota = mascotaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Mascota no encontrada"));
+        mascota.setFoto(foto);
+        mascotaRepository.save(mascota);
+    }
+
+    public byte[] getFoto(String id) {
+        Mascota mascota = mascotaRepository.findById(id).orElse(null);
+        return (mascota != null) ? mascota.getFoto() : null;
+    }
+}

@@ -29,9 +29,9 @@ public class DataInitializer implements CommandLineRunner {
             admin.setPassword(passwordEncoder.encode("admin123"));
             admin.setEmail("admin@peluqueriacanina.com");
             admin.setRol("ADMIN");
-            
+
             usuarioRepository.save(admin);
-            
+
             System.out.println("Base de datos inicializada con usuario administrador");
         }
     }

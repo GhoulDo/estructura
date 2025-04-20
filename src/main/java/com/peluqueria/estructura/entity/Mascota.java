@@ -3,6 +3,7 @@ package com.peluqueria.estructura.entity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,4 +22,7 @@ public class Mascota {
 
     @DBRef
     private Cliente cliente;
+
+    @Field
+    private byte[] foto; // Campo para almacenar la foto de la mascota en formato binario
 }

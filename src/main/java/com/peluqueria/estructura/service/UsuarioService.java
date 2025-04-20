@@ -1,14 +1,18 @@
 package com.peluqueria.estructura.service;
 
-import com.peluqueria.estructura.entity.Usuario;
-import com.peluqueria.estructura.repository.UsuarioRepository;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import com.peluqueria.estructura.entity.Usuario;
+import com.peluqueria.estructura.repository.UsuarioRepository;
 
+import lombok.Data;
+
+@Data
 @Service
 public class UsuarioService {
 
@@ -18,11 +22,6 @@ public class UsuarioService {
     @Autowired
     public UsuarioService(UsuarioRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
-    }
-
-    @Autowired
-    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
-        this.passwordEncoder = passwordEncoder;
     }
 
     public List<Usuario> findAll() {
