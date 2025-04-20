@@ -19,10 +19,14 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.regex.Pattern;
+
 @Service
 public class AuthenticationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
     private final UsuarioRepository usuarioRepository;
     private final JwtUtil jwtUtil;
@@ -51,14 +55,22 @@ public class AuthenticationService {
 
     public AuthResponse login(AuthRequest loginRequest) {
         try {
-            Usuario usuario = usuarioRepository.findByEmail(loginRequest.getEmail())
+            // Normalizar el email
+            String normalizedEmail = loginRequest.getEmail().trim().toLowerCase();
+
+            // Validar el formato del email
+            if (!EMAIL_PATTERN.matcher(normalizedEmail).matches()) {
+                throw new IllegalArgumentException("El formato del email es inválido.");
+            }
+
+            Usuario usuario = usuarioRepository.findByEmail(normalizedEmail)
                     .orElseThrow(() -> {
-                        logger.warn("Usuario no encontrado con el email: {}", loginRequest.getEmail());
+                        logger.warn("Usuario no encontrado con el email: {}", normalizedEmail);
                         return new IllegalArgumentException("Usuario no encontrado con el email proporcionado.");
                     });
 
             if (!passwordEncoder.matches(loginRequest.getPassword(), usuario.getPassword())) {
-                logger.warn("Contraseña incorrecta para el usuario: {}", loginRequest.getEmail());
+                logger.warn("Contraseña incorrecta para el usuario: {}", normalizedEmail);
                 throw new IllegalArgumentException("La contraseña es incorrecta.");
             }
 
