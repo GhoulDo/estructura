@@ -58,8 +58,12 @@ public class AuthenticationService {
             // Normalizar el email
             String normalizedEmail = loginRequest.getEmail().trim().toLowerCase();
 
+            // Log para verificar el email normalizado
+            logger.debug("Intentando autenticar usuario con email: {}", normalizedEmail);
+
             // Validar el formato del email
             if (!EMAIL_PATTERN.matcher(normalizedEmail).matches()) {
+                logger.warn("Formato de email inválido: {}", normalizedEmail);
                 throw new IllegalArgumentException("El formato del email es inválido.");
             }
 
@@ -69,6 +73,9 @@ public class AuthenticationService {
                         return new IllegalArgumentException("Usuario no encontrado con el email proporcionado.");
                     });
 
+            // Log para verificar que el usuario fue encontrado
+            logger.debug("Usuario encontrado: {}", usuario.getUsername());
+
             if (!passwordEncoder.matches(loginRequest.getPassword(), usuario.getPassword())) {
                 logger.warn("Contraseña incorrecta para el usuario: {}", normalizedEmail);
                 throw new IllegalArgumentException("La contraseña es incorrecta.");
@@ -76,6 +83,10 @@ public class AuthenticationService {
 
             UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getEmail());
             String token = jwtUtil.generateToken(userDetails.getUsername(), userDetails.getAuthorities());
+
+            // Log para verificar que el token fue generado
+            logger.debug("Token generado exitosamente para el usuario: {}", usuario.getUsername());
+
             return new AuthResponse(token);
         } catch (IllegalArgumentException e) {
             logger.warn("Error de autenticación: {}", e.getMessage());

@@ -1,0 +1,219 @@
+# DOCUMENTACIÓN ACTUALIZADA DE RUTAS API - PELUQUERÍA CANINA SPA
+
+## AUTENTICACIÓN
+
+### Login
+- **Ruta:** POST /api/auth/login
+- **Descripción:** Autenticar usuario y obtener token JWT.
+- **Cuerpo de solicitud (JSON):**
+```json
+{
+  "email": "usuario@ejemplo.com",
+  "password": "contraseña"
+}
+```
+- **Respuesta exitosa:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ..."
+}
+```
+
+### Registro de usuario
+- **Ruta:** POST /api/auth/register
+- **Descripción:** Registrar un nuevo usuario.
+- **Cuerpo de solicitud (JSON):**
+```json
+{
+  "username": "nombreusuario",
+  "email": "usuario@ejemplo.com",
+  "password": "contraseña",
+  "rol": "CLIENTE"
+}
+```
+
+### Logout
+- **Ruta:** POST /api/auth/logout
+- **Descripción:** Cerrar sesión e invalidar el token JWT.
+- **Autorización:** Token JWT requerido.
+
+## USUARIOS
+
+### Obtener todos los usuarios
+- **Ruta:** GET /api/usuarios
+- **Descripción:** Obtener lista de todos los usuarios.
+- **Autorización:** Token JWT requerido.
+
+### Obtener usuario por ID
+- **Ruta:** GET /api/usuarios/{id}
+- **Descripción:** Obtener información de un usuario específico por ID.
+- **Autorización:** Token JWT requerido.
+
+### Eliminar usuario
+- **Ruta:** DELETE /api/usuarios/{id}
+- **Descripción:** Eliminar un usuario específico.
+- **Autorización:** Token JWT requerido (ADMIN).
+
+## CLIENTES
+
+### Obtener todos los clientes
+- **Ruta:** GET /api/clientes
+- **Descripción:** Obtener lista de todos los clientes.
+- **Autorización:** Token JWT requerido.
+
+### Obtener cliente por ID
+- **Ruta:** GET /api/clientes/{id}
+- **Descripción:** Obtener información de un cliente específico.
+- **Autorización:** Token JWT requerido.
+
+### Crear cliente
+- **Ruta:** POST /api/clientes
+- **Descripción:** Registrar un nuevo cliente.
+- **Autorización:** Token JWT requerido (ADMIN).
+
+### Actualizar cliente
+- **Ruta:** PUT /api/clientes/{id}
+- **Descripción:** Actualizar información de un cliente.
+- **Autorización:** Token JWT requerido.
+
+### Eliminar cliente
+- **Ruta:** DELETE /api/clientes/{id}
+- **Descripción:** Eliminar un cliente.
+- **Autorización:** Token JWT requerido (ADMIN).
+
+## MASCOTAS
+
+### Obtener todas las mascotas
+- **Ruta:** GET /api/mascotas
+- **Descripción:** Obtener lista de mascotas del cliente autenticado.
+- **Autorización:** Token JWT requerido.
+
+### Obtener mascota por ID
+- **Ruta:** GET /api/mascotas/{id}
+- **Descripción:** Obtener información de una mascota específica.
+- **Autorización:** Token JWT requerido.
+
+### Crear mascota
+- **Ruta:** POST /api/mascotas
+- **Descripción:** Registrar una nueva mascota.
+- **Autorización:** Token JWT requerido.
+
+### Actualizar mascota
+- **Ruta:** PUT /api/mascotas/{id}
+- **Descripción:** Actualizar información de una mascota.
+- **Autorización:** Token JWT requerido.
+
+### Eliminar mascota
+- **Ruta:** DELETE /api/mascotas/{id}
+- **Descripción:** Eliminar una mascota.
+- **Autorización:** Token JWT requerido.
+
+## SERVICIOS
+
+### Obtener todos los servicios
+- **Ruta:** GET /api/servicios
+- **Descripción:** Obtener lista de todos los servicios disponibles.
+- **Autorización:** Token JWT requerido.
+
+### Obtener servicio por ID
+- **Ruta:** GET /api/servicios/{id}
+- **Descripción:** Obtener información de un servicio específico.
+- **Autorización:** Token JWT requerido.
+
+### Crear servicio
+- **Ruta:** POST /api/servicios
+- **Descripción:** Registrar un nuevo servicio.
+- **Autorización:** Token JWT requerido (ADMIN).
+
+### Actualizar servicio
+- **Ruta:** PUT /api/servicios/{id}
+- **Descripción:** Actualizar información de un servicio.
+- **Autorización:** Token JWT requerido (ADMIN).
+
+### Eliminar servicio
+- **Ruta:** DELETE /api/servicios/{id}
+- **Descripción:** Eliminar un servicio.
+- **Autorización:** Token JWT requerido (ADMIN).
+
+## PRODUCTOS
+
+### Obtener todos los productos
+- **Ruta:** GET /api/productos
+- **Descripción:** Obtener lista de todos los productos.
+- **Autorización:** Token JWT requerido.
+
+### Obtener producto por ID
+- **Ruta:** GET /api/productos/{id}
+- **Descripción:** Obtener información de un producto específico.
+- **Autorización:** Token JWT requerido.
+
+### Crear producto
+- **Ruta:** POST /api/productos
+- **Descripción:** Registrar un nuevo producto.
+- **Autorización:** Token JWT requerido (ADMIN).
+
+### Actualizar producto
+- **Ruta:** PUT /api/productos/{id}
+- **Descripción:** Actualizar información de un producto.
+- **Autorización:** Token JWT requerido (ADMIN).
+
+### Eliminar producto
+- **Ruta:** DELETE /api/productos/{id}
+- **Descripción:** Eliminar un producto.
+- **Autorización:** Token JWT requerido (ADMIN).
+
+## CITAS
+
+### Obtener todas las citas
+- **Ruta:** GET /api/citas
+- **Descripción:** Obtener lista de citas con filtros opcionales.
+- **Autorización:** Token JWT requerido.
+
+### Obtener cita por ID
+- **Ruta:** GET /api/citas/{id}
+- **Descripción:** Obtener información de una cita específica.
+- **Autorización:** Token JWT requerido.
+
+### Crear cita
+- **Ruta:** POST /api/citas
+- **Descripción:** Registrar una nueva cita.
+- **Autorización:** Token JWT requerido.
+
+### Actualizar cita
+- **Ruta:** PUT /api/citas/{id}
+- **Descripción:** Actualizar información de una cita.
+- **Autorización:** Token JWT requerido.
+
+### Eliminar cita
+- **Ruta:** DELETE /api/citas/{id}
+- **Descripción:** Eliminar una cita.
+- **Autorización:** Token JWT requerido.
+
+## FACTURAS
+
+### Obtener todas las facturas
+- **Ruta:** GET /api/facturas
+- **Descripción:** Obtener lista de facturas (todas para ADMIN, solo propias para CLIENTE).
+- **Autorización:** Token JWT requerido.
+
+### Obtener factura por ID
+- **Ruta:** GET /api/facturas/{id}
+- **Descripción:** Obtener información de una factura específica.
+- **Autorización:** Token JWT requerido.
+
+### Crear factura
+- **Ruta:** POST /api/facturas
+- **Descripción:** Registrar una nueva factura.
+- **Autorización:** Token JWT requerido.
+
+### Calcular total de factura
+- **Ruta:** GET /api/facturas/{id}/total
+- **Descripción:** Calcular el total de una factura.
+- **Autorización:** Token JWT requerido.
+
+## HEALTH CHECK
+
+### Estado del servicio
+- **Ruta:** GET /api/health
+- **Descripción:** Verificar el estado y tiempo de actividad del servicio.
+- **Autorización:** No requiere.
