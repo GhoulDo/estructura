@@ -2,6 +2,7 @@ package com.peluqueria.estructura.controller;
 
 import com.peluqueria.estructura.entity.Mascota;
 import com.peluqueria.estructura.service.MascotaService;
+import com.peluqueria.estructura.service.ClienteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -15,9 +16,11 @@ import java.util.Optional;
 public class MascotaController {
 
     private final MascotaService mascotaService;
+    private final ClienteService clienteService; // Inyección del servicio ClienteService
 
-    public MascotaController(MascotaService mascotaService) {
+    public MascotaController(MascotaService mascotaService, ClienteService clienteService) {
         this.mascotaService = mascotaService;
+        this.clienteService = clienteService; // Inicialización del servicio ClienteService
     }
 
     @GetMapping
@@ -33,10 +36,25 @@ public class MascotaController {
     }
 
     @PostMapping
-    public ResponseEntity<Mascota> createMascota(@RequestBody Mascota mascota, Authentication authentication) {
-        // La lógica de asociar la mascota al cliente correcto debe estar implementada
-        // en el servicio
-        return ResponseEntity.ok(mascotaService.save(mascota));
+    public ResponseEntity<Mascota> createMascota(@RequestPart("mascota") Mascota mascota,
+            @RequestPart(value = "foto", required = false) MultipartFile foto,
+            Authentication authentication) {
+        try {
+            // Asociar la mascota al cliente autenticado
+            mascota.setCliente(clienteService.findByUsuarioUsername(authentication.getName())); // Uso de clienteService
+
+            // Guardar la mascota
+            Mascota savedMascota = mascotaService.save(mascota);
+
+            // Si se proporciona una foto, guardarla
+            if (foto != null && !foto.isEmpty()) {
+                mascotaService.saveFoto(savedMascota.getId(), foto.getBytes());
+            }
+
+            return ResponseEntity.ok(savedMascota);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(null);
+        }
     }
 
     @PutMapping("/{id}")

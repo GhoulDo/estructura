@@ -30,8 +30,9 @@ public class ClienteService {
         return clienteRepository.findByUsuarioId(usuarioId);
     }
 
-    public Optional<Cliente> findByUsuarioUsername(String username) {
-        return clienteRepository.findByUsuarioUsername(username);
+    public Cliente findByUsuarioUsername(String username) {
+        return clienteRepository.findByUsuarioUsername(username)
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado con el username: " + username));
     }
 
     public Cliente save(Cliente cliente) {
