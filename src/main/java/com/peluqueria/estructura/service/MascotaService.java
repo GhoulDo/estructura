@@ -2,7 +2,6 @@ package com.peluqueria.estructura.service;
 
 import com.peluqueria.estructura.entity.Cliente;
 import com.peluqueria.estructura.entity.Mascota;
-import com.peluqueria.estructura.repository.ClienteRepository;
 import com.peluqueria.estructura.repository.MascotaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,18 +11,19 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.dao.DataAccessException;
 
 @Service
 public class MascotaService {
 
     private static final Logger logger = LoggerFactory.getLogger(MascotaService.class);
     private final MascotaRepository mascotaRepository;
-    private final ClienteRepository clienteRepository;
+    private final ClienteService clienteService;
 
     @Autowired
-    public MascotaService(MascotaRepository mascotaRepository, ClienteRepository clienteRepository) {
+    public MascotaService(MascotaRepository mascotaRepository, ClienteService clienteService) {
         this.mascotaRepository = mascotaRepository;
-        this.clienteRepository = clienteRepository;
+        this.clienteService = clienteService;
     }
 
     public List<Mascota> findAll() {
@@ -46,25 +46,23 @@ public class MascotaService {
     public List<Mascota> findByClienteUsuarioUsername(String username) {
         logger.debug("Buscando mascotas para el usuario: {}", username);
         try {
-            // Encontramos el cliente asociado a ese usuario
-            Optional<Cliente> clienteOpt = clienteRepository.findByUsuarioUsername(username);
-
-            if (!clienteOpt.isPresent()) {
-                logger.warn("No se encontró cliente para el usuario: {}", username);
-                return Collections.emptyList();
-            }
-
-            Cliente cliente = clienteOpt.get();
+            // Usar el ClienteService para obtener el cliente
+            Cliente cliente = clienteService.findByUsuarioUsername(username);
             logger.debug("Cliente encontrado para el usuario: {}, ID: {}", username, cliente.getId());
 
             // Buscar mascotas por el ID del cliente
-            List<Mascota> mascotas = mascotaRepository.findByClienteId(cliente.getId());
-            logger.debug("Encontradas {} mascotas para el cliente: {}", mascotas.size(), cliente.getId());
-
-            return mascotas;
+            try {
+                List<Mascota> mascotas = mascotaRepository.findByClienteId(cliente.getId());
+                logger.debug("Encontradas {} mascotas para el cliente: {}", mascotas.size(), cliente.getId());
+                return mascotas;
+            } catch (DataAccessException e) {
+                logger.error("Error de acceso a datos al buscar mascotas para el cliente ID {}: {}",
+                        cliente.getId(), e.getMessage(), e);
+                return Collections.emptyList();
+            }
         } catch (Exception e) {
-            logger.error("Error al buscar mascotas para el usuario: {}", username, e);
-            throw e;
+            logger.error("Error al buscar mascotas para el usuario: {}: {}", username, e.getMessage(), e);
+            return Collections.emptyList(); // Devuelve lista vacía en lugar de lanzar excepción
         }
     }
 
@@ -72,17 +70,23 @@ public class MascotaService {
      * Busca una mascota por su ID y el username del usuario
      */
     public Optional<Mascota> findByIdAndClienteUsuarioUsername(String id, String username) {
-        // Encontramos el cliente asociado a ese usuario
-        Optional<Cliente> clienteOpt = clienteRepository.findByUsuarioUsername(username);
+        try {
+            // Usar el ClienteService para obtener el cliente
+            Cliente cliente = clienteService.findByUsuarioUsername(username);
 
-        if (!clienteOpt.isPresent()) {
+            // Intentamos encontrar la mascota por su id y el id del cliente
+            try {
+                return mascotaRepository.findByIdAndClienteId(id, cliente.getId());
+            } catch (DataAccessException e) {
+                logger.error("Error de acceso a datos al buscar mascota ID {} para el cliente ID {}: {}",
+                        id, cliente.getId(), e.getMessage(), e);
+                return Optional.empty();
+            }
+        } catch (Exception e) {
+            logger.error("Error al buscar mascota ID {} para el usuario: {}: {}",
+                    id, username, e.getMessage(), e);
             return Optional.empty();
         }
-
-        Cliente cliente = clienteOpt.get();
-
-        // Intentamos encontrar la mascota por su id y el id del cliente
-        return mascotaRepository.findByIdAndClienteId(id, cliente.getId());
     }
 
     public Mascota save(Mascota mascota) {
