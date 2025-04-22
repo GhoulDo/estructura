@@ -23,14 +23,14 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
-        
+
         // Configurar orígenes permitidos explícitamente
         String[] origins = allowedOrigins.split(",");
         for (String origin : origins) {
             config.addAllowedOrigin(origin.trim());
             logger.info("CORS: Permitiendo origen: {}", origin.trim());
         }
-        
+
         // También permitimos cualquier origen como respaldo
         config.addAllowedOriginPattern("*");
         logger.info("CORS: También permitiendo cualquier origen con patrón comodín");
