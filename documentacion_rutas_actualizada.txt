@@ -83,30 +83,138 @@
 
 ## MASCOTAS
 
+### Crear mascota
+- **Ruta:** POST /api/mascotas
+- **Descripción:** Registrar una nueva mascota asociada al cliente autenticado. Se puede incluir una foto opcionalmente.
+- **Autorización:** Token JWT requerido.
+- **Cuerpo de solicitud (multipart/form-data):**
+  - **mascota (JSON):** Información de la mascota. Ejemplo:
+    ```json
+    {
+      "nombre": "Lucas",
+      "tipo": "Perro",
+      "raza": "Pincher",
+      "edad": 1
+    }
+    ```
+  - **foto (archivo, opcional):** Imagen de la mascota en formato JPG, PNG, etc.
+- **Ejemplo de solicitud con foto (form-data):**
+  - **mascota:** `{"nombre": "Lucas", "tipo": "Perro", "raza": "Pincher", "edad": 1}`
+  - **foto:** (archivo de imagen, por ejemplo, `lucas.jpg`)
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "680588849cad136405990c69",
+    "nombre": "Lucas",
+    "tipo": "Perro",
+    "raza": "Pincher",
+    "edad": 1,
+    "cliente": {
+      "id": "123456789",
+      "username": "cliente1"
+    },
+    "foto": "ruta/o/url/de/la/foto.jpg"
+  }
+  ```
+- **Errores comunes:**
+  - **401 Unauthorized:** El token JWT no es válido o no se proporcionó.
+  - **500 Internal Server Error:** Error al procesar la solicitud o guardar la foto.
+
 ### Obtener todas las mascotas
 - **Ruta:** GET /api/mascotas
-- **Descripción:** Obtener lista de mascotas del cliente autenticado.
+- **Descripción:** Obtener la lista de mascotas asociadas al cliente autenticado.
 - **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  [
+    {
+      "id": "680588849cad136405990c69",
+      "nombre": "Lucas",
+      "tipo": "Perro",
+      "raza": "Pincher",
+      "edad": 1,
+      "cliente": {
+        "id": "123456789",
+        "username": "cliente1"
+      },
+      "foto": "ruta/o/url/de/la/foto.jpg"
+    }
+  ]
+  ```
 
 ### Obtener mascota por ID
 - **Ruta:** GET /api/mascotas/{id}
 - **Descripción:** Obtener información de una mascota específica.
 - **Autorización:** Token JWT requerido.
-
-### Crear mascota
-- **Ruta:** POST /api/mascotas
-- **Descripción:** Registrar una nueva mascota.
-- **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "680588849cad136405990c69",
+    "nombre": "Lucas",
+    "tipo": "Perro",
+    "raza": "Pincher",
+    "edad": 1,
+    "cliente": {
+      "id": "123456789",
+      "username": "cliente1"
+    },
+    "foto": "ruta/o/url/de/la/foto.jpg"
+  }
+  ```
 
 ### Actualizar mascota
 - **Ruta:** PUT /api/mascotas/{id}
-- **Descripción:** Actualizar información de una mascota.
+- **Descripción:** Actualizar información de una mascota específica.
 - **Autorización:** Token JWT requerido.
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "nombre": "Lucas",
+    "tipo": "Perro",
+    "raza": "Pincher",
+    "edad": 2
+  }
+  ```
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "680588849cad136405990c69",
+    "nombre": "Lucas",
+    "tipo": "Perro",
+    "raza": "Pincher",
+    "edad": 2,
+    "cliente": {
+      "id": "123456789",
+      "username": "cliente1"
+    },
+    "foto": "ruta/o/url/de/la/foto.jpg"
+  }
+  ```
 
 ### Eliminar mascota
 - **Ruta:** DELETE /api/mascotas/{id}
-- **Descripción:** Eliminar una mascota.
+- **Descripción:** Eliminar una mascota específica.
 - **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:** Código de estado `204 No Content`.
+
+### Subir foto de mascota
+- **Ruta:** POST /api/mascotas/{id}/foto
+- **Descripción:** Subir o actualizar la foto de una mascota específica.
+- **Autorización:** Token JWT requerido.
+- **Cuerpo de solicitud (form-data):**
+  - **foto (archivo):** Imagen de la mascota en formato JPG, PNG, etc.
+- **Respuesta exitosa:**
+  ```json
+  {
+    "mensaje": "Foto subida correctamente"
+  }
+  ```
+
+### Obtener foto de mascota
+- **Ruta:** GET /api/mascotas/{id}/foto
+- **Descripción:** Obtener la foto de una mascota específica.
+- **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:** Archivo binario de la imagen.
 
 ## SERVICIOS
 
@@ -114,26 +222,126 @@
 - **Ruta:** GET /api/servicios
 - **Descripción:** Obtener lista de todos los servicios disponibles.
 - **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  [
+    {
+      "id": "60d21b4667d0d8992e610c85",
+      "nombre": "Baño y corte",
+      "duracion": 60,
+      "precio": 25.50
+    },
+    {
+      "id": "60d21b4667d0d8992e610c86",
+      "nombre": "Corte de uñas",
+      "duracion": 15,
+      "precio": 10.00
+    },
+    {
+      "id": "60d21b4667d0d8992e610c87",
+      "nombre": "Limpieza dental",
+      "duracion": 30,
+      "precio": 35.00
+    }
+  ]
+  ```
 
 ### Obtener servicio por ID
 - **Ruta:** GET /api/servicios/{id}
 - **Descripción:** Obtener información de un servicio específico.
 - **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610c85",
+    "nombre": "Baño y corte",
+    "duracion": 60,
+    "precio": 25.50
+  }
+  ```
+- **Respuesta de error:** Código de estado `404 Not Found` si el servicio no existe.
 
 ### Crear servicio
 - **Ruta:** POST /api/servicios
 - **Descripción:** Registrar un nuevo servicio.
 - **Autorización:** Token JWT requerido (ADMIN).
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "nombre": "Spa completo",
+    "duracion": 90,
+    "precio": 45.00
+  }
+  ```
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610c88",
+    "nombre": "Spa completo",
+    "duracion": 90,
+    "precio": 45.00
+  }
+  ```
+- **Errores comunes:**
+  - **401 Unauthorized:** El token JWT no es válido o no tiene permisos de ADMIN.
+  - **400 Bad Request:** Datos faltantes o incorrectos.
 
 ### Actualizar servicio
 - **Ruta:** PUT /api/servicios/{id}
 - **Descripción:** Actualizar información de un servicio.
 - **Autorización:** Token JWT requerido (ADMIN).
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "nombre": "Spa completo premium",
+    "duracion": 120,
+    "precio": 55.00
+  }
+  ```
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610c88",
+    "nombre": "Spa completo premium",
+    "duracion": 120,
+    "precio": 55.00
+  }
+  ```
+- **Errores comunes:**
+  - **401 Unauthorized:** El token JWT no es válido o no tiene permisos de ADMIN.
+  - **404 Not Found:** El servicio no existe.
+
+### Actualizar parcialmente un servicio
+- **Ruta:** PATCH /api/servicios/{id}
+- **Descripción:** Actualizar parcialmente la información de un servicio.
+- **Autorización:** Token JWT requerido (ADMIN).
+- **Cuerpo de solicitud (JSON):** Solo incluir los campos que desea actualizar.
+  ```json
+  {
+    "precio": 60.00
+  }
+  ```
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610c88",
+    "nombre": "Spa completo premium",
+    "duracion": 120,
+    "precio": 60.00
+  }
+  ```
+- **Errores comunes:**
+  - **401 Unauthorized:** El token JWT no es válido o no tiene permisos de ADMIN.
+  - **404 Not Found:** El servicio no existe.
 
 ### Eliminar servicio
 - **Ruta:** DELETE /api/servicios/{id}
 - **Descripción:** Eliminar un servicio.
 - **Autorización:** Token JWT requerido (ADMIN).
+- **Respuesta exitosa:** Código de estado `204 No Content`.
+- **Errores comunes:**
+  - **401 Unauthorized:** El token JWT no es válido o no tiene permisos de ADMIN.
+  - **404 Not Found:** El servicio no existe.
 
 ## PRODUCTOS
 
@@ -141,26 +349,111 @@
 - **Ruta:** GET /api/productos
 - **Descripción:** Obtener lista de todos los productos.
 - **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  [
+    {
+      "id": "60d21b4667d0d8992e610c95",
+      "nombre": "Champú premium",
+      "tipo": "Higiene",
+      "precio": 15.99,
+      "stock": 20
+    },
+    {
+      "id": "60d21b4667d0d8992e610c96",
+      "nombre": "Cepillo dental",
+      "tipo": "Higiene",
+      "precio": 8.50,
+      "stock": 15
+    },
+    {
+      "id": "60d21b4667d0d8992e610c97",
+      "nombre": "Juguete para perro",
+      "tipo": "Accesorios",
+      "precio": 12.99,
+      "stock": 30
+    }
+  ]
+  ```
 
 ### Obtener producto por ID
 - **Ruta:** GET /api/productos/{id}
 - **Descripción:** Obtener información de un producto específico.
 - **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610c95",
+    "nombre": "Champú premium",
+    "tipo": "Higiene",
+    "precio": 15.99,
+    "stock": 20
+  }
+  ```
+- **Respuesta de error:** Código de estado `404 Not Found` si el producto no existe.
 
 ### Crear producto
 - **Ruta:** POST /api/productos
 - **Descripción:** Registrar un nuevo producto.
 - **Autorización:** Token JWT requerido (ADMIN).
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "nombre": "Correa ajustable",
+    "tipo": "Accesorios",
+    "precio": 18.50,
+    "stock": 25
+  }
+  ```
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610c98",
+    "nombre": "Correa ajustable",
+    "tipo": "Accesorios",
+    "precio": 18.50,
+    "stock": 25
+  }
+  ```
+- **Errores comunes:**
+  - **401 Unauthorized:** El token JWT no es válido o no tiene permisos de ADMIN.
+  - **400 Bad Request:** Datos faltantes o incorrectos.
 
 ### Actualizar producto
 - **Ruta:** PUT /api/productos/{id}
 - **Descripción:** Actualizar información de un producto.
 - **Autorización:** Token JWT requerido (ADMIN).
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "nombre": "Correa ajustable premium",
+    "tipo": "Accesorios",
+    "precio": 22.99,
+    "stock": 15
+  }
+  ```
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610c98",
+    "nombre": "Correa ajustable premium",
+    "tipo": "Accesorios",
+    "precio": 22.99,
+    "stock": 15
+  }
+  ```
+- **Errores comunes:**
+  - **401 Unauthorized:** El token JWT no es válido o no tiene permisos de ADMIN.
+  - **404 Not Found:** El producto no existe.
 
 ### Eliminar producto
 - **Ruta:** DELETE /api/productos/{id}
 - **Descripción:** Eliminar un producto.
 - **Autorización:** Token JWT requerido (ADMIN).
+- **Respuesta exitosa:** Código de estado `204 No Content`.
+- **Errores comunes:**
+  - **401 Unauthorized:** El token JWT no es válido o no tiene permisos de ADMIN.
+  - **404 Not Found:** El producto no existe.
 
 ## CITAS
 
@@ -168,26 +461,204 @@
 - **Ruta:** GET /api/citas
 - **Descripción:** Obtener lista de citas con filtros opcionales.
 - **Autorización:** Token JWT requerido.
+- **Parámetros opcionales:**
+  - **estado:** Estado de la cita (PENDIENTE, CONFIRMADA, CANCELADA, etc.)
+  - **mascotaId:** ID de la mascota
+  - **servicioId:** ID del servicio
+  - **fechaDesde:** Fecha inicial (formato ISO: YYYY-MM-DD)
+  - **fechaHasta:** Fecha final (formato ISO: YYYY-MM-DD)
+  - **ordenarPor:** Campo por el cual ordenar (por defecto: fecha)
+  - **direccion:** Dirección del ordenamiento (asc o desc)
+- **Respuesta exitosa:**
+  ```json
+  [
+    {
+      "id": "60d21b4667d0d8992e610c90",
+      "mascota": {
+        "id": "60d21b4667d0d8992e610c80",
+        "nombre": "Lucas",
+        "tipo": "Perro",
+        "raza": "Pincher",
+        "edad": 1
+      },
+      "servicio": {
+        "id": "60d21b4667d0d8992e610c85",
+        "nombre": "Baño y corte",
+        "duracion": 60,
+        "precio": 25.50
+      },
+      "fecha": "2023-07-15",
+      "hora": "10:00:00",
+      "estado": "CONFIRMADA",
+      "facturada": false,
+      "facturaId": null
+    }
+  ]
+  ```
+
+### Obtener citas organizadas por fecha
+- **Ruta:** GET /api/citas/organizadas
+- **Descripción:** Obtener las citas organizadas por fecha para visualización en calendario.
+- **Autorización:** Token JWT requerido.
+- **Parámetros opcionales:** Igual que en GET /api/citas
+- **Respuesta exitosa:**
+  ```json
+  {
+    "2023-07-15": [
+      {
+        "id": "60d21b4667d0d8992e610c90",
+        "mascota": {
+          "id": "60d21b4667d0d8992e610c80",
+          "nombre": "Lucas",
+          "tipo": "Perro",
+          "raza": "Pincher",
+          "edad": 1
+        },
+        "servicio": {
+          "id": "60d21b4667d0d8992e610c85",
+          "nombre": "Baño y corte",
+          "duracion": 60,
+          "precio": 25.50
+        },
+        "fecha": "2023-07-15",
+        "hora": "10:00:00",
+        "estado": "CONFIRMADA",
+        "facturada": false,
+        "facturaId": null
+      }
+    ],
+    "2023-07-16": [
+      // Otra cita...
+    ]
+  }
+  ```
 
 ### Obtener cita por ID
 - **Ruta:** GET /api/citas/{id}
 - **Descripción:** Obtener información de una cita específica.
 - **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610c90",
+    "mascota": {
+      "id": "60d21b4667d0d8992e610c80",
+      "nombre": "Lucas",
+      "tipo": "Perro",
+      "raza": "Pincher",
+      "edad": 1
+    },
+    "servicio": {
+      "id": "60d21b4667d0d8992e610c85",
+      "nombre": "Baño y corte",
+      "duracion": 60,
+      "precio": 25.50
+    },
+    "fecha": "2023-07-15",
+    "hora": "10:00:00",
+    "estado": "CONFIRMADA",
+    "facturada": false,
+    "facturaId": null
+  }
+  ```
+
+### Obtener citas por mascota
+- **Ruta:** GET /api/citas/mascota/{mascotaId}
+- **Descripción:** Obtener citas asociadas a una mascota específica.
+- **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:** Lista de citas (mismo formato que GET /api/citas)
+
+### Obtener citas por fecha
+- **Ruta:** GET /api/citas/fecha/{fecha}
+- **Descripción:** Obtener citas para una fecha específica.
+- **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:** Lista de citas (mismo formato que GET /api/citas)
+
+### Obtener citas de hoy
+- **Ruta:** GET /api/citas/hoy
+- **Descripción:** Obtener citas programadas para el día actual.
+- **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:** Lista de citas (mismo formato que GET /api/citas)
 
 ### Crear cita
 - **Ruta:** POST /api/citas
 - **Descripción:** Registrar una nueva cita.
 - **Autorización:** Token JWT requerido.
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "mascota": {
+      "id": "60d21b4667d0d8992e610c80"
+    },
+    "servicio": {
+      "id": "60d21b4667d0d8992e610c85"
+    },
+    "fecha": "2023-07-15",
+    "hora": "10:00:00",
+    "estado": "PENDIENTE"
+  }
+  ```
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610c90",
+    "mascota": {
+      "id": "60d21b4667d0d8992e610c80",
+      "nombre": "Lucas",
+      "tipo": "Perro",
+      "raza": "Pincher",
+      "edad": 1
+    },
+    "servicio": {
+      "id": "60d21b4667d0d8992e610c85",
+      "nombre": "Baño y corte",
+      "duracion": 60,
+      "precio": 25.50
+    },
+    "fecha": "2023-07-15",
+    "hora": "10:00:00",
+    "estado": "PENDIENTE",
+    "facturada": false,
+    "facturaId": null
+  }
+  ```
 
 ### Actualizar cita
 - **Ruta:** PUT /api/citas/{id}
 - **Descripción:** Actualizar información de una cita.
 - **Autorización:** Token JWT requerido.
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "mascota": {
+      "id": "60d21b4667d0d8992e610c80"
+    },
+    "servicio": {
+      "id": "60d21b4667d0d8992e610c86"
+    },
+    "fecha": "2023-07-16",
+    "hora": "11:00:00",
+    "estado": "CONFIRMADA"
+  }
+  ```
+- **Respuesta exitosa:** Misma estructura que la respuesta de creación
 
 ### Eliminar cita
 - **Ruta:** DELETE /api/citas/{id}
 - **Descripción:** Eliminar una cita.
 - **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:** Código de estado `204 No Content`.
+
+### Validar disponibilidad de cita
+- **Ruta:** GET /api/citas/validar
+- **Descripción:** Verificar si una hora y fecha están disponibles para agendar.
+- **Autorización:** Token JWT requerido.
+- **Parámetros requeridos:**
+  - **mascotaId:** ID de la mascota
+  - **servicioId:** ID del servicio
+  - **fecha:** Fecha de la cita (formato: YYYY-MM-DD)
+  - **hora:** Hora de la cita (formato: HH:MM:SS)
+- **Respuesta exitosa:** `"Cita disponible"` o mensaje de error explicando por qué no está disponible.
 
 ## FACTURAS
 
@@ -195,21 +666,252 @@
 - **Ruta:** GET /api/facturas
 - **Descripción:** Obtener lista de facturas (todas para ADMIN, solo propias para CLIENTE).
 - **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  [
+    {
+      "id": "60d21b4667d0d8992e610d90",
+      "cliente": {
+        "id": "60d21b4667d0d8992e610c70",
+        "usuario": {
+          "id": "60d21b4667d0d8992e610c60",
+          "username": "cliente1"
+        }
+      },
+      "fecha": "2023-07-15T12:30:45",
+      "total": 45.50,
+      "estado": "PAGADA",
+      "detalles": [
+        {
+          "id": "60d21b4667d0d8992e610d91",
+          "servicioId": "60d21b4667d0d8992e610c85",
+          "servicioNombre": "Baño y corte",
+          "cantidad": 1,
+          "precioUnitario": 25.50,
+          "subtotal": 25.50
+        },
+        {
+          "id": "60d21b4667d0d8992e610d92",
+          "productoId": "60d21b4667d0d8992e610c95",
+          "productoNombre": "Champú premium",
+          "cantidad": 2,
+          "precioUnitario": 10.00,
+          "subtotal": 20.00
+        }
+      ]
+    }
+  ]
+  ```
 
 ### Obtener factura por ID
 - **Ruta:** GET /api/facturas/{id}
 - **Descripción:** Obtener información de una factura específica.
 - **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610d90",
+    "cliente": {
+      "id": "60d21b4667d0d8992e610c70",
+      "usuario": {
+        "id": "60d21b4667d0d8992e610c60",
+        "username": "cliente1"
+      }
+    },
+    "fecha": "2023-07-15T12:30:45",
+    "total": 45.50,
+    "estado": "PAGADA",
+    "detalles": [
+      {
+        "id": "60d21b4667d0d8992e610d91",
+        "servicioId": "60d21b4667d0d8992e610c85",
+        "servicioNombre": "Baño y corte",
+        "cantidad": 1,
+        "precioUnitario": 25.50,
+        "subtotal": 25.50
+      },
+      {
+        "id": "60d21b4667d0d8992e610d92",
+        "productoId": "60d21b4667d0d8992e610c95",
+        "productoNombre": "Champú premium",
+        "cantidad": 2,
+        "precioUnitario": 10.00,
+        "subtotal": 20.00
+      }
+    ]
+  }
+  ```
 
 ### Crear factura
 - **Ruta:** POST /api/facturas
 - **Descripción:** Registrar una nueva factura.
 - **Autorización:** Token JWT requerido.
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "cliente": {
+      "id": "60d21b4667d0d8992e610c70"
+    },
+    "estado": "PENDIENTE",
+    "detalles": [
+      {
+        "servicioId": "60d21b4667d0d8992e610c85",
+        "servicioNombre": "Baño y corte",
+        "cantidad": 1,
+        "precioUnitario": 25.50,
+        "subtotal": 25.50
+      }
+    ]
+  }
+  ```
+- **Respuesta exitosa:** Misma estructura que la respuesta GET /api/facturas/{id}
 
 ### Calcular total de factura
 - **Ruta:** GET /api/facturas/{id}/total
 - **Descripción:** Calcular el total de una factura.
 - **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  45.50
+  ```
+
+## DETALLES DE FACTURA
+
+### Obtener todos los detalles de una factura
+- **Ruta:** GET /api/facturas/{facturaId}/detalles
+- **Descripción:** Obtener todos los detalles de una factura específica.
+- **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  [
+    {
+      "id": "60d21b4667d0d8992e610d91",
+      "productoId": null,
+      "servicioId": "60d21b4667d0d8992e610c85",
+      "cantidad": 1,
+      "subtotal": 25.50
+    },
+    {
+      "id": "60d21b4667d0d8992e610d92",
+      "productoId": "60d21b4667d0d8992e610c95",
+      "servicioId": null,
+      "cantidad": 2,
+      "subtotal": 20.00
+    }
+  ]
+  ```
+
+### Obtener detalle específico de una factura
+- **Ruta:** GET /api/facturas/{facturaId}/detalles/{detalleId}
+- **Descripción:** Obtener un detalle específico de una factura.
+- **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610d91",
+    "productoId": null,
+    "servicioId": "60d21b4667d0d8992e610c85",
+    "cantidad": 1,
+    "subtotal": 25.50
+  }
+  ```
+
+### Crear detalle de factura
+- **Ruta:** POST /api/facturas/{facturaId}/detalles
+- **Descripción:** Agregar un nuevo detalle a una factura existente.
+- **Autorización:** Token JWT requerido.
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "productoId": "60d21b4667d0d8992e610c95",
+    "cantidad": 2
+  }
+  ```
+  o
+  ```json
+  {
+    "servicioId": "60d21b4667d0d8992e610c85",
+    "cantidad": 1
+  }
+  ```
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610d92",
+    "productoId": "60d21b4667d0d8992e610c95",
+    "servicioId": null,
+    "cantidad": 2,
+    "subtotal": 20.00
+  }
+  ```
+
+### Actualizar detalle de factura
+- **Ruta:** PUT /api/facturas/{facturaId}/detalles/{detalleId}
+- **Descripción:** Actualizar un detalle existente en una factura.
+- **Autorización:** Token JWT requerido.
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "productoId": "60d21b4667d0d8992e610c95",
+    "cantidad": 3
+  }
+  ```
+- **Respuesta exitosa:**
+  ```json
+  {
+    "id": "60d21b4667d0d8992e610d92",
+    "productoId": "60d21b4667d0d8992e610c95",
+    "servicioId": null,
+    "cantidad": 3,
+    "subtotal": 30.00
+  }
+  ```
+
+### Eliminar detalle de factura
+- **Ruta:** DELETE /api/facturas/{facturaId}/detalles/{detalleId}
+- **Descripción:** Eliminar un detalle de una factura.
+- **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:** Código de estado `204 No Content`.
+
+## FACTURACIÓN UNIFICADA
+
+### Facturar una cita con productos opcionales
+- **Ruta:** POST /api/facturacion-unificada/facturar-cita/{citaId}
+- **Descripción:** Crear una factura a partir de una cita, con opción de añadir productos.
+- **Autorización:** Token JWT requerido.
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "productosIds": ["60d21b4667d0d8992e610c95", "60d21b4667d0d8992e610c96"],
+    "cantidades": [2, 1]
+  }
+  ```
+- **Respuesta exitosa:** Factura completa con detalles (similar a GET /api/facturas/{id})
+
+### Agregar productos a una factura existente
+- **Ruta:** PUT /api/facturacion-unificada/agregar-productos/{facturaId}
+- **Descripción:** Añadir productos a una factura existente.
+- **Autorización:** Token JWT requerido.
+- **Cuerpo de solicitud (JSON):**
+  ```json
+  {
+    "productosIds": ["60d21b4667d0d8992e610c97"],
+    "cantidades": [1]
+  }
+  ```
+- **Respuesta exitosa:** Factura actualizada con los nuevos productos
+
+### Marcar factura como pagada
+- **Ruta:** PUT /api/facturacion-unificada/pagar/{facturaId}
+- **Descripción:** Cambiar el estado de una factura a PAGADA.
+- **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:** Factura actualizada con estado "PAGADA"
+
+### Obtener facturas de un cliente
+- **Ruta:** GET /api/facturacion-unificada/cliente/{clienteId}
+- **Descripción:** Obtener todas las facturas asociadas a un cliente.
+- **Autorización:** Token JWT requerido.
+- **Respuesta exitosa:** Lista de facturas del cliente
 
 ## HEALTH CHECK
 

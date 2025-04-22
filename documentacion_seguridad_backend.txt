@@ -1,0 +1,206 @@
+# DOCUMENTACIÓN DE SEGURIDAD DEL BACKEND - PELUQUERÍA CANINA SPA
+
+## CONFIGURACIÓN GENERAL DE SEGURIDAD
+
+El backend implementa un sistema de seguridad basado en JWT (JSON Web Tokens) con Spring Security, que protege las rutas según los roles de usuario y gestiona la autenticación y autorización.
+
+## AUTENTICACIÓN Y AUTORIZACIÓN
+
+### Flujo de autenticación
+1. **Registro de usuario**: El cliente envía una solicitud POST a `/api/auth/register` con sus credenciales.
+2. **Inicio de sesión**: El cliente envía una solicitud POST a `/api/auth/login` con sus credenciales.
+3. **Recepción del token**: El servidor valida las credenciales y devuelve un token JWT.
+4. **Uso del token**: El cliente incluye el token en el encabezado `Authorization` para todas las solicitudes posteriores.
+5. **Validación del token**: El servidor valida el token en cada solicitud y autoriza el acceso según el rol del usuario.
+6. **Cierre de sesión**: El cliente puede invalidar el token enviando una solicitud POST a `/api/auth/logout`.
+
+### Estructura del token JWT
+- **Header**: Contiene información sobre el algoritmo de firma (`HS256`).
+- **Payload**: Contiene datos sobre el usuario (nombre de usuario, roles, etc.) y metadatos (fecha de emisión, fecha de expiración).
+- **Signature**: Garantiza que el token no ha sido manipulado.
+
+## CONFIGURACIÓN CORS (Cross-Origin Resource Sharing)
+
+El backend permite solicitudes desde diferentes orígenes a través de la configuración CORS implementada en `CorsConfig.java`:
+
+```java
+@Configuration
+public class CorsConfig {
+    @Bean
+    public CorsFilter corsFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        
+        // Permite solicitudes desde cualquier origen
+        config.addAllowedOriginPattern("*");
+        
+        // Permite enviar credenciales (cookies, tokens, etc.)
+        config.setAllowCredentials(true);
+        
+        // Permite todos los encabezados HTTP
+        config.addAllowedHeader("*");
+        
+        // Permite estos métodos HTTP
+        config.addAllowedMethod("GET");
+        config.addAllowedMethod("POST");
+        config.addAllowedMethod("PUT");
+        config.addAllowedMethod("DELETE");
+        config.addAllowedMethod("OPTIONS");
+        
+        // Expone el encabezado de autorización para acceso desde el frontend
+        config.addExposedHeader("Authorization");
+        
+        // Aplica esta configuración a todas las rutas
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return new CorsFilter(source);
+    }
+}
+```
+
+Esta configuración garantiza que el frontend pueda:
+1. Realizar solicitudes al backend desde cualquier dominio.
+2. Enviar tokens de autenticación en los encabezados.
+3. Utilizar todos los métodos HTTP necesarios para la aplicación.
+4. Acceder al encabezado `Authorization` en las respuestas.
+
+## ROLES Y PERMISOS
+
+El sistema implementa dos roles principales:
+
+### 1. CLIENTE
+Los usuarios con rol CLIENTE tienen permiso para:
+- Gestionar sus propias mascotas (crear, actualizar, eliminar, ver).
+- Gestionar sus propias citas (crear, actualizar, eliminar, ver).
+- Ver sus propias facturas.
+- Ver los servicios y productos disponibles.
+
+### 2. ADMIN
+Los usuarios con rol ADMIN tienen permiso para:
+- Realizar todas las acciones que un CLIENTE puede hacer.
+- Gestionar todos los usuarios del sistema.
+- Gestionar todos los clientes del sistema.
+- Gestionar los servicios (crear, actualizar, eliminar).
+- Gestionar los productos (crear, actualizar, eliminar).
+- Ver todas las facturas del sistema.
+- Crear y actualizar facturas.
+
+## RUTAS PROTEGIDAS Y PERMISOS REQUERIDOS
+
+| Ruta                       | Método | ADMIN | CLIENTE | Sin autenticar |
+|----------------------------|--------|-------|---------|---------------|
+| /api/auth/login            | POST   | ✓     | ✓       | ✓             |
+| /api/auth/register         | POST   | ✓     | ✓       | ✓             |
+| /api/auth/logout           | POST   | ✓     | ✓       | ✗             |
+| /api/usuarios              | GET    | ✓     | ✗       | ✗             |
+| /api/usuarios/{id}         | GET    | ✓     | ✗       | ✗             |
+| /api/usuarios/{id}         | DELETE | ✓     | ✗       | ✗             |
+| /api/clientes              | GET    | ✓     | ✓       | ✗             |
+| /api/clientes/{id}         | GET    | ✓     | ✓       | ✗             |
+| /api/clientes              | POST   | ✓     | ✗       | ✗             |
+| /api/clientes/{id}         | PUT    | ✓     | ✓       | ✗             |
+| /api/clientes/{id}         | DELETE | ✓     | ✗       | ✗             |
+| /api/mascotas              | GET    | ✓     | ✓       | ✗             |
+| /api/mascotas/{id}         | GET    | ✓     | ✓       | ✗             |
+| /api/mascotas              | POST   | ✓     | ✓       | ✗             |
+| /api/mascotas/{id}         | PUT    | ✓     | ✓       | ✗             |
+| /api/mascotas/{id}         | DELETE | ✓     | ✓       | ✗             |
+| /api/mascotas/{id}/foto    | POST   | ✓     | ✓       | ✗             |
+| /api/mascotas/{id}/foto    | GET    | ✓     | ✓       | ✗             |
+| /api/servicios             | GET    | ✓     | ✓       | ✗             |
+| /api/servicios/{id}        | GET    | ✓     | ✓       | ✗             |
+| /api/servicios             | POST   | ✓     | ✗       | ✗             |
+| /api/servicios/{id}        | PUT    | ✓     | ✗       | ✗             |
+| /api/servicios/{id}        | PATCH  | ✓     | ✗       | ✗             |
+| /api/servicios/{id}        | DELETE | ✓     | ✗       | ✗             |
+| /api/productos             | GET    | ✓     | ✓       | ✗             |
+| /api/productos/{id}        | GET    | ✓     | ✓       | ✗             |
+| /api/productos             | POST   | ✓     | ✗       | ✗             |
+| /api/productos/{id}        | PUT    | ✓     | ✗       | ✗             |
+| /api/productos/{id}        | DELETE | ✓     | ✗       | ✗             |
+| /api/citas                 | GET    | ✓     | ✓       | ✗             |
+| /api/citas/{id}            | GET    | ✓     | ✓       | ✗             |
+| /api/citas                 | POST   | ✓     | ✓       | ✗             |
+| /api/citas/{id}            | PUT    | ✓     | ✓       | ✗             |
+| /api/citas/{id}            | DELETE | ✓     | ✓       | ✗             |
+| /api/facturas              | GET    | ✓     | ✓       | ✗             |
+| /api/facturas/{id}         | GET    | ✓     | ✓       | ✗             |
+| /api/facturas              | POST   | ✓     | ✗       | ✗             |
+| /api/facturas/{id}/total   | GET    | ✓     | ✓       | ✗             |
+| /api/health                | GET    | ✓     | ✓       | ✓             |
+
+## IMPLEMENTACIÓN TÉCNICA
+
+### Protección de rutas
+La configuración de seguridad está implementada en `SecurityConfig.java`, donde se define qué rutas están protegidas y qué roles pueden acceder a cada una:
+
+```java
+@Configuration
+@EnableGlobalMethodSecurity(prePostEnabled = true)
+public class SecurityConfig {
+    // ...existing code...
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                // Rutas públicas
+                .requestMatchers("/api/auth/**", "/api/health").permitAll()
+
+                // Usuarios - solo admin
+                .requestMatchers(HttpMethod.GET, "/api/usuarios/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasRole("ADMIN")
+
+                // Clientes - admin para crear/eliminar, cliente para ver/actualizar
+                .requestMatchers(HttpMethod.GET, "/api/clientes/**").hasAnyRole("ADMIN", "CLIENTE")
+                .requestMatchers(HttpMethod.POST, "/api/clientes").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/clientes/**").hasAnyRole("ADMIN", "CLIENTE")
+                .requestMatchers(HttpMethod.DELETE, "/api/clientes/**").hasRole("ADMIN")
+
+                // ... configuración para otras rutas ...
+
+                // Cualquier otra ruta requiere autenticación
+                .anyRequest().authenticated()
+            )
+            // ... más configuración ...
+    }
+    // ...existing code...
+}
+```
+
+### Filtro JWT
+Para validar los tokens JWT en cada solicitud, se implementa un filtro (`JwtAuthenticationFilter`) que:
+1. Extrae el token del encabezado `Authorization`.
+2. Valida el token.
+3. Carga los detalles del usuario y sus roles.
+4. Establece la autenticación en el contexto de seguridad si el token es válido.
+
+## RECOMENDACIONES PARA EL FRONTEND
+
+1. **Almacenamiento del token**: 
+   - Almacenar el token JWT en `localStorage` o `sessionStorage` para mantener la sesión.
+   - Incluir el token en cada solicitud HTTP en el encabezado `Authorization: Bearer <token>`.
+
+2. **Manejo de errores de autenticación**:
+   - Interceptar respuestas 401 (No autorizado) y redirigir al usuario a la página de inicio de sesión.
+   - Interceptar respuestas 403 (Prohibido) y mostrar un mensaje de acceso denegado.
+
+3. **Verificación de roles**:
+   - Implementar verificación de roles en el frontend para mostrar u ocultar elementos según los permisos del usuario.
+
+4. **Cierre de sesión**:
+   - Eliminar el token del almacenamiento local.
+   - Enviar una solicitud al endpoint de logout (`/api/auth/logout`).
+   - Redirigir al usuario a la página de inicio.
+
+## MEJORES PRÁCTICAS DE SEGURIDAD
+
+1. **Protección contra CSRF**: El backend tiene deshabilitada la protección CSRF para API REST con autenticación basada en tokens. Si se implementan cookies de sesión, se recomienda habilitar esta protección.
+
+2. **Renovación de tokens**: Implementar un mecanismo para renovar tokens antes de que expiren para mantener la sesión del usuario sin interrupciones.
+
+3. **Validación de entrada**: Todos los datos recibidos del cliente deben ser validados antes de procesarse.
+
+4. **Logs de seguridad**: El sistema registra intentos de autenticación fallidos y acciones sensibles.
+
+5. **Gestión de sesiones**: El sistema invalida tokens al cerrar sesión, agregándolos a una lista negra.

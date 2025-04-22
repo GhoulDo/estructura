@@ -1,0 +1,190 @@
+# DOCUMENTACIÓN DE FLUJO DE USUARIOS Y DISEÑO UX - PELUQUERÍA CANINA SPA
+
+## FLUJO PARA CLIENTE
+
+### 1. Inicio de sesión
+- **Pantalla:** Página de inicio de sesión.
+- **Elementos clave:**
+  - Campo para correo electrónico.
+  - Campo para contraseña.
+  - Botón "Iniciar sesión".
+  - Enlace "¿Olvidaste tu contraseña?".
+- **Flujo:**
+  1. El cliente ingresa su correo y contraseña.
+  2. Al hacer clic en "Iniciar sesión", se envía una solicitud `POST /api/auth/login`.
+  3. Si las credenciales son correctas, se redirige al **Dashboard del cliente**.
+  4. Si hay un error, se muestra un mensaje claro: "Credenciales incorrectas. Inténtalo de nuevo."
+
+---
+
+### 2. Dashboard del cliente
+- **Pantalla:** Vista principal después de iniciar sesión.
+- **Elementos clave:**
+  - Bienvenida personalizada: "¡Hola, [Nombre del cliente]!"
+  - Accesos rápidos:
+    - Ver mascotas.
+    - Agendar cita.
+    - Ver facturas.
+  - Barra de navegación superior con opciones:
+    - Mascotas.
+    - Citas.
+    - Facturas.
+    - Perfil.
+    - Cerrar sesión.
+- **Flujo:**
+  1. El cliente puede navegar fácilmente entre las secciones usando la barra de navegación.
+  2. Cada sección tiene un diseño limpio y organizado.
+
+---
+
+### 3. Gestión de mascotas
+- **Pantalla:** Lista de mascotas.
+- **Elementos clave:**
+  - Botón "Agregar mascota".
+  - Tarjetas para cada mascota con:
+    - Foto.
+    - Nombre.
+    - Tipo (Perro, Gato, etc.).
+    - Raza.
+    - Edad.
+    - Botones de acción: "Editar" y "Eliminar".
+- **Flujo:**
+  1. El cliente puede ver todas sus mascotas en un diseño de tarjetas.
+  2. Al hacer clic en "Agregar mascota", se abre un formulario modal con campos para:
+     - Nombre.
+     - Tipo.
+     - Raza.
+     - Edad.
+     - Subir foto.
+  3. Al guardar, se envía una solicitud `POST /api/mascotas`.
+  4. Para editar, se abre el mismo formulario con los datos precargados y se envía una solicitud `PUT /api/mascotas/{id}`.
+  5. Para eliminar, se muestra una confirmación antes de enviar una solicitud `DELETE /api/mascotas/{id}`.
+
+---
+
+### 4. Gestión de citas
+- **Pantalla:** Lista de citas.
+- **Elementos clave:**
+  - Botón "Agendar cita".
+  - Tabla con columnas:
+    - Fecha.
+    - Hora.
+    - Mascota.
+    - Servicio.
+    - Estado (Pendiente, Confirmada, Cancelada).
+    - Botones de acción: "Editar" y "Cancelar".
+- **Flujo:**
+  1. El cliente puede ver todas sus citas en una tabla ordenada.
+  2. Al hacer clic en "Agendar cita", se abre un formulario modal con:
+     - Selección de mascota.
+     - Selección de servicio.
+     - Fecha y hora.
+  3. Al guardar, se envía una solicitud `POST /api/citas`.
+  4. Para editar, se abre el mismo formulario con los datos precargados y se envía una solicitud `PUT /api/citas/{id}`.
+  5. Para cancelar, se muestra una confirmación antes de enviar una solicitud `DELETE /api/citas/{id}`.
+
+---
+
+### 5. Gestión de facturas
+- **Pantalla:** Lista de facturas.
+- **Elementos clave:**
+  - Tabla con columnas:
+    - Número de factura.
+    - Fecha.
+    - Total.
+    - Estado (Pagada, Pendiente).
+    - Botón "Ver detalles".
+- **Flujo:**
+  1. El cliente puede ver todas sus facturas en una tabla.
+  2. Al hacer clic en "Ver detalles", se abre una vista con:
+     - Información de la factura.
+     - Detalles de los servicios y productos.
+     - Botón para descargar la factura en PDF.
+
+---
+
+### 6. Perfil del cliente
+- **Pantalla:** Configuración del perfil.
+- **Elementos clave:**
+  - Formulario con campos:
+    - Nombre.
+    - Correo electrónico.
+    - Contraseña (con opción para cambiarla).
+  - Botón "Guardar cambios".
+- **Flujo:**
+  1. El cliente puede actualizar su información personal.
+  2. Al guardar, se envía una solicitud `PUT /api/clientes/{id}`.
+
+---
+
+## FLUJO PARA ADMIN
+
+### 1. Inicio de sesión
+- **Pantalla:** Igual que la del cliente.
+
+---
+
+### 2. Dashboard del administrador
+- **Pantalla:** Vista principal después de iniciar sesión.
+- **Elementos clave:**
+  - Estadísticas clave:
+    - Número de clientes.
+    - Número de mascotas.
+    - Citas agendadas.
+    - Facturación total.
+  - Accesos rápidos:
+    - Gestión de clientes.
+    - Gestión de servicios.
+    - Gestión de productos.
+  - Barra de navegación superior con opciones:
+    - Clientes.
+    - Servicios.
+    - Productos.
+    - Facturas.
+    - Cerrar sesión.
+- **Flujo:**
+  1. El administrador puede navegar fácilmente entre las secciones usando la barra de navegación.
+  2. Cada sección tiene un diseño limpio y organizado.
+
+---
+
+### 3. Gestión de clientes
+- **Pantalla:** Lista de clientes.
+- **Elementos clave:**
+  - Botón "Agregar cliente".
+  - Tabla con columnas:
+    - Nombre.
+    - Correo electrónico.
+    - Número de mascotas.
+    - Botones de acción: "Editar" y "Eliminar".
+- **Flujo:**
+  1. El administrador puede ver todos los clientes en una tabla.
+  2. Al hacer clic en "Agregar cliente", se abre un formulario modal.
+  3. Al guardar, se envía una solicitud `POST /api/clientes`.
+  4. Para editar, se abre el mismo formulario con los datos precargados y se envía una solicitud `PUT /api/clientes/{id}`.
+  5. Para eliminar, se muestra una confirmación antes de enviar una solicitud `DELETE /api/clientes/{id}`.
+
+---
+
+### 4. Gestión de servicios y productos
+- **Pantalla:** Similar a la gestión de clientes.
+- **Flujo:** Igual que el flujo de gestión de clientes, pero con datos específicos de servicios o productos.
+
+---
+
+### 5. Gestión de facturas
+- **Pantalla:** Lista de facturas.
+- **Elementos clave:**
+  - Tabla con columnas:
+    - Número de factura.
+    - Cliente.
+    - Fecha.
+    - Total.
+    - Estado.
+    - Botón "Ver detalles".
+- **Flujo:** Igual que el flujo de facturas para clientes, pero con acceso a todas las facturas.
+
+---
+
+### 6. Perfil del administrador
+- **Pantalla:** Igual que la del cliente.

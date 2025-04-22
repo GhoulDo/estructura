@@ -11,6 +11,11 @@ server:
     enabled: true
     mime-types: application/json,application/xml,text/plain
     min-response-size: 1024
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
 
 jwt:
   secret: your_secure_secret_key_here_that_is_at_least_256_bits_long_1234567890abcdef
