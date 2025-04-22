@@ -5,12 +5,16 @@ import com.peluqueria.estructura.service.MascotaService;
 import com.peluqueria.estructura.service.ClienteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -27,15 +31,39 @@ public class MascotaController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Mascota>> getAllMascotas(Authentication authentication) {
-        logger.info("Petición recibida para obtener todas las mascotas del usuario: {}", authentication.getName());
+    public ResponseEntity<?> getAllMascotas(Authentication authentication) {
+        logger.info("Petición recibida para obtener todas las mascotas");
         try {
-            List<Mascota> mascotas = mascotaService.findByClienteUsuarioUsername(authentication.getName());
-            logger.info("Encontradas {} mascotas para el usuario {}", mascotas.size(), authentication.getName());
+            // Verificar si hay autenticación
+            if (authentication == null) {
+                logger.error("Error: Authentication es null");
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "No hay autenticación");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            }
+
+            String username = authentication.getName();
+            logger.info("Usuario autenticado: {}", username);
+
+            // Intento obtener las mascotas
+            List<Mascota> mascotas = mascotaService.findByClienteUsuarioUsername(username);
+
+            if (mascotas == null) {
+                logger.warn("findByClienteUsuarioUsername devolvió null para {}", username);
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+
+            logger.info("Encontradas {} mascotas para el usuario {}", mascotas.size(), username);
             return ResponseEntity.ok(mascotas);
         } catch (Exception e) {
-            logger.error("Error al obtener mascotas: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(null);
+            logger.error("Error al obtener mascotas: {} - Causa: {}", e.getMessage(), e.getCause(), e);
+
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Error interno del servidor");
+            error.put("mensaje", e.getMessage());
+            error.put("causa", e.getCause() != null ? e.getCause().getMessage() : "Desconocida");
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
