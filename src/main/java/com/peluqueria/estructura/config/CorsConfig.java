@@ -7,10 +7,14 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Configuration
 public class CorsConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(CorsConfig.class);
 
     @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,https://peluqueriacanina-app.onrender.com}")
     private String allowedOrigins;
@@ -20,31 +24,29 @@ public class CorsConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
 
-        // Configuración más permisiva para desarrollo
-        config.setAllowedOriginPatterns(Collections.singletonList("*"));
+        // Configuración para permitir solicitudes de cualquier origen
+        config.addAllowedOriginPattern("*");
+        logger.info("CORS configurado para permitir cualquier origen");
 
-        // Permitir credenciales - incompatible con comodines de origen en producción
-        // Para producción, si se usa withCredentials: true en frontend, usar:
-        // config.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
-        // config.setAllowCredentials(true);
-
-        // Para configuración actual donde frontend tiene withCredentials: false:
+        // Permitir envío de credenciales (cookies, autenticación HTTP)
         config.setAllowCredentials(false);
+        logger.info("CORS configurado con allowCredentials=false para compatibilidad con wildcard origins");
 
-        // Establecer tiempo de caché CORS para mejorar rendimiento (1 hora)
-        config.setMaxAge(3600L);
-
-        // Permitir todos los headers
+        // Permitir todos los encabezados
         config.addAllowedHeader("*");
 
-        // Permitir todos los métodos HTTP que necesites
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        // Permitir todos los métodos HTTP necesarios
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
-        // Exponer headers importantes para autenticación
+        // Exponer encabezados específicos al cliente
         config.addExposedHeader("Authorization");
         config.addExposedHeader("Content-Disposition");
 
+        // Tiempo de caché para respuestas preflight (en segundos)
+        config.setMaxAge(3600L);
+
         source.registerCorsConfiguration("/**", config);
+        logger.info("Configuración CORS aplicada a todas las rutas");
         return new CorsFilter(source);
     }
 }

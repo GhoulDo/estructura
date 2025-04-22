@@ -23,11 +23,20 @@ server:
       enabled: true
       force: true
 
-# Configuración para CORS - mantenemos aquí los orígenes permitidos para facilitar ajustes
+# Configuración específica para CORS
 cors:
   allowed-origins: http://localhost:3000,http://localhost:5173,https://peluqueriacanina-app.onrender.com
-  allow-credentials: false
+  allow-credentials: false  # Configurado a false para permitir wildcard origins
 
+# Configuración para JWT
 jwt:
   secret: your_secure_secret_key_here_that_is_at_least_256_bits_long_1234567890abcdef
-  expiration: 604800000
+  expiration: 604800000  # 7 días en milisegundos
+
+# Configuración para logging
+logging:
+  level:
+    root: INFO
+    com.peluqueria.estructura: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
