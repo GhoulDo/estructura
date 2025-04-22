@@ -23,14 +23,21 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
-
-        // Configuración para permitir solicitudes de cualquier origen
+        
+        // Configurar orígenes permitidos explícitamente
+        String[] origins = allowedOrigins.split(",");
+        for (String origin : origins) {
+            config.addAllowedOrigin(origin.trim());
+            logger.info("CORS: Permitiendo origen: {}", origin.trim());
+        }
+        
+        // También permitimos cualquier origen como respaldo
         config.addAllowedOriginPattern("*");
-        logger.info("CORS configurado para permitir cualquier origen");
+        logger.info("CORS: También permitiendo cualquier origen con patrón comodín");
 
-        // Permitir envío de credenciales (cookies, autenticación HTTP)
-        config.setAllowCredentials(false);
-        logger.info("CORS configurado con allowCredentials=false para compatibilidad con wildcard origins");
+        // Configurar credenciales - ahora permitimos credenciales
+        config.setAllowCredentials(true);
+        logger.info("CORS: Configurado para permitir credenciales");
 
         // Permitir todos los encabezados
         config.addAllowedHeader("*");
@@ -41,12 +48,14 @@ public class CorsConfig {
         // Exponer encabezados específicos al cliente
         config.addExposedHeader("Authorization");
         config.addExposedHeader("Content-Disposition");
+        config.addExposedHeader("Access-Control-Allow-Origin");
+        config.addExposedHeader("Access-Control-Allow-Credentials");
 
         // Tiempo de caché para respuestas preflight (en segundos)
         config.setMaxAge(3600L);
 
         source.registerCorsConfiguration("/**", config);
-        logger.info("Configuración CORS aplicada a todas las rutas");
+        logger.info("Configuración CORS mejorada aplicada a todas las rutas");
         return new CorsFilter(source);
     }
 }
