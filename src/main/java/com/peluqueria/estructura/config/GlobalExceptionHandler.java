@@ -5,32 +5,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.multipart.MultipartException;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Manejador global de excepciones para la aplicación.
+ * No extiende ResponseEntityExceptionHandler para evitar conflictos con
+ * manejadores de excepciones predeterminados.
+ */
 @ControllerAdvice
-public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
-
-    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<Object> handleHttpMediaTypeNotSupported(
-            HttpMediaTypeNotSupportedException ex, WebRequest request) {
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now().toString());
-        body.put("status", HttpStatus.UNSUPPORTED_MEDIA_TYPE.value());
-        body.put("error", "Tipo de contenido no soportado");
-        body.put("mensaje", "El formato de la petición no es soportado. " +
-                "Para crear una mascota con foto, use 'multipart/form-data'. " +
-                "Para crear una mascota sin foto, use 'application/json'.");
-        body.put("detalleError", ex.getMessage());
-
-        return new ResponseEntity<>(body, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-    }
+public class GlobalExceptionHandler {
 
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<Object> handleMultipartException(
