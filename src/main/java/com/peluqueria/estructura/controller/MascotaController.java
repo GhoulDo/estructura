@@ -1,5 +1,6 @@
 package com.peluqueria.estructura.controller;
 
+import com.peluqueria.estructura.entity.Cliente;
 import com.peluqueria.estructura.entity.Mascota;
 import com.peluqueria.estructura.service.MascotaService;
 import com.peluqueria.estructura.service.ClienteService;
@@ -10,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartException;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -82,24 +85,78 @@ public class MascotaController {
     }
 
     @PostMapping
-    public ResponseEntity<Mascota> createMascota(@RequestPart("mascota") Mascota mascota,
+    public ResponseEntity<?> createMascota(
+            @RequestPart(value = "mascota") Mascota mascota,
             @RequestPart(value = "foto", required = false) MultipartFile foto,
             Authentication authentication) {
         logger.info("Petición recibida para crear una nueva mascota para el usuario: {}", authentication.getName());
-        try {
-            mascota.setCliente(clienteService.findByUsuarioUsername(authentication.getName()));
-            Mascota savedMascota = mascotaService.save(mascota);
-            logger.info("Mascota creada con éxito: {}", savedMascota);
 
-            if (foto != null && !foto.isEmpty()) {
-                mascotaService.saveFoto(savedMascota.getId(), foto.getBytes());
-                logger.info("Foto guardada para la mascota con ID: {}", savedMascota.getId());
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // 1. Obtener el cliente asociado al usuario autenticado
+            Cliente cliente = null;
+            try {
+                cliente = clienteService.findByUsuarioUsername(authentication.getName());
+                logger.info("Cliente encontrado: {} con ID: {}", cliente.getNombre(), cliente.getId());
+            } catch (Exception e) {
+                logger.error("Error al encontrar el cliente del usuario {}: {}", authentication.getName(),
+                        e.getMessage());
+                response.put("error", "Error al encontrar el cliente asociado al usuario");
+                response.put("mensaje", e.getMessage());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
-            return ResponseEntity.ok(savedMascota);
+            // 2. Asociar el cliente a la mascota
+            mascota.setCliente(cliente);
+
+            // 3. Guardar la mascota
+            Mascota savedMascota = mascotaService.save(mascota);
+            logger.info("Mascota creada con éxito: ID={}, Nombre={}", savedMascota.getId(), savedMascota.getNombre());
+
+            // 4. Procesar la foto si existe
+            if (foto != null && !foto.isEmpty()) {
+                try {
+                    byte[] fotoBytes = foto.getBytes();
+                    logger.info("Foto recibida: {} bytes, contentType: {}",
+                            fotoBytes.length, foto.getContentType());
+
+                    // Verificar tamaño razonable
+                    if (fotoBytes.length > 5 * 1024 * 1024) { // 5MB
+                        logger.warn("La foto es demasiado grande: {} bytes", fotoBytes.length);
+                        response.put("advertencia", "La foto es demasiado grande y ha sido ignorada");
+                    } else {
+                        mascotaService.saveFoto(savedMascota.getId(), fotoBytes);
+                        logger.info("Foto guardada para la mascota con ID: {}", savedMascota.getId());
+                    }
+                } catch (IOException e) {
+                    logger.error("Error al procesar bytes de la foto: {}", e.getMessage());
+                    response.put("advertencia", "No se pudo procesar la foto: " + e.getMessage());
+                }
+            }
+
+            // 5. Devolver la respuesta exitosa
+            response.put("mascota", savedMascota);
+            response.put("mensaje", "Mascota creada exitosamente");
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (MultipartException e) {
+            // Error específico de formato multipart
+            logger.error("Error en el formato multipart de la solicitud: {}", e.getMessage(), e);
+            response.put("error", "Error en el formato de la solicitud");
+            response.put("mensaje", "Verifica que estés enviando correctamente los campos 'mascota' y 'foto'");
+            response.put("detalleError", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         } catch (Exception e) {
-            logger.error("Error al crear la mascota: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(null);
+            // Error general
+            logger.error("Error al crear la mascota: {} - Causa: {}",
+                    e.getMessage(), e.getCause() != null ? e.getCause().getMessage() : "desconocida", e);
+
+            response.put("error", "Error al crear la mascota");
+            response.put("mensaje", e.getMessage());
+            response.put("causa", e.getCause() != null ? e.getCause().getMessage() : "Desconocida");
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
