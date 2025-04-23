@@ -7,14 +7,15 @@ import com.peluqueria.estructura.service.ClienteService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartException;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,14 +32,57 @@ public class MascotaController {
     private final ClienteService clienteService;
     private final ObjectMapper objectMapper;
 
+    @Value("${api.base-url:}")
+    private String apiBaseUrl; // URL base de la API, puede ser configurada en properties
+
     public MascotaController(MascotaService mascotaService, ClienteService clienteService, ObjectMapper objectMapper) {
         this.mascotaService = mascotaService;
         this.clienteService = clienteService;
         this.objectMapper = objectMapper;
     }
 
+    private String buildFotoUrl(String mascotaId, HttpServletRequest request) {
+        // Si la URL base está configurada en las propiedades, usarla
+        if (apiBaseUrl != null && !apiBaseUrl.isEmpty()) {
+            return apiBaseUrl + "/api/mascotas/" + mascotaId + "/foto";
+        }
+
+        // Si no, construir la URL basada en la petición actual
+        String scheme = request.getScheme();
+        String serverName = request.getServerName();
+        int serverPort = request.getServerPort();
+        String contextPath = request.getContextPath();
+
+        // Construir la URL completa
+        StringBuilder url = new StringBuilder();
+        url.append(scheme).append("://").append(serverName);
+
+        // Añadir el puerto solo si no es el puerto por defecto (80 para HTTP, 443 para HTTPS)
+        if ((serverPort != 80 && "http".equals(scheme)) ||
+            (serverPort != 443 && "https".equals(scheme))) {
+            url.append(":").append(serverPort);
+        }
+
+        url.append(contextPath);
+        if (!contextPath.endsWith("/")) {
+            url.append("/");
+        }
+        url.append("api/mascotas/").append(mascotaId).append("/foto");
+
+        return url.toString();
+    }
+
+    /**
+     * Establece la URL de foto para una mascota si tiene foto
+     */
+    private void setFotoUrl(Mascota mascota, HttpServletRequest request) {
+        if (mascota.getTieneFoto()) {
+            mascota.setFotoUrl(buildFotoUrl(mascota.getId(), request));
+        }
+    }
+
     @GetMapping
-    public ResponseEntity<?> getAllMascotas(Authentication authentication) {
+    public ResponseEntity<?> getAllMascotas(Authentication authentication, HttpServletRequest request) {
         logger.info("Petición recibida para obtener todas las mascotas");
         try {
             // Verificar si hay autenticación
@@ -60,6 +104,9 @@ public class MascotaController {
                 return ResponseEntity.ok(Collections.emptyList());
             }
 
+            // Establecer la URL de la foto para cada mascota
+            mascotas.forEach(mascota -> setFotoUrl(mascota, request));
+
             logger.info("Encontradas {} mascotas para el usuario {}", mascotas.size(), username);
             return ResponseEntity.ok(mascotas);
         } catch (Exception e) {
@@ -75,29 +122,30 @@ public class MascotaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Mascota> getMascotaById(@PathVariable String id, Authentication authentication) {
+    public ResponseEntity<Mascota> getMascotaById(@PathVariable String id, Authentication authentication, HttpServletRequest request) {
         logger.info("Petición recibida para obtener la mascota con ID: {} del usuario: {}", id,
                 authentication.getName());
-        Optional<Mascota> mascota = mascotaService.findByIdAndClienteUsuarioUsername(id, authentication.getName());
-        if (mascota.isPresent()) {
-            logger.info("Mascota encontrada: {}", mascota.get());
-            return ResponseEntity.ok(mascota.get());
+        Optional<Mascota> mascotaOpt = mascotaService.findByIdAndClienteUsuarioUsername(id, authentication.getName());
+        if (mascotaOpt.isPresent()) {
+            Mascota mascota = mascotaOpt.get();
+            // Establecer la URL de la foto si tiene foto
+            setFotoUrl(mascota, request);
+            logger.info("Mascota encontrada: {}", mascota);
+            return ResponseEntity.ok(mascota);
         } else {
             logger.warn("Mascota con ID: {} no encontrada para el usuario: {}", id, authentication.getName());
             return ResponseEntity.notFound().build();
         }
     }
 
-    /**
-     * Endpoint flexible para crear mascotas que acepta tanto form-data como JSON
-     */
     @PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE })
     public ResponseEntity<?> createMascota(
             @RequestParam(value = "mascota", required = false) String mascotaJson,
             @RequestPart(value = "mascota", required = false) Mascota mascotaDirecta,
             @RequestBody(required = false) Mascota mascotaBody,
             @RequestParam(value = "foto", required = false) MultipartFile foto,
-            Authentication authentication) {
+            Authentication authentication,
+            HttpServletRequest request) {
 
         logger.info("Petición recibida para crear mascota. Content-Type: {}",
                 (mascotaJson != null) ? "form-data con JSON string"
@@ -128,7 +176,7 @@ public class MascotaController {
             }
 
             // Continuar con el procesamiento normal
-            return procesarCreacionMascota(mascota, foto, authentication);
+            return procesarCreacionMascota(mascota, foto, authentication, request);
 
         } catch (Exception e) {
             logger.error("Error al procesar los datos de la mascota: {}", e.getMessage(), e);
@@ -140,27 +188,22 @@ public class MascotaController {
         }
     }
 
-    /**
-     * Endpoint para crear mascotas sólo con JSON (sin fotos)
-     */
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createMascotaJson(
             @RequestBody Mascota mascotaBody,
-            Authentication authentication) {
+            Authentication authentication,
+            HttpServletRequest request) {
 
         logger.info("Petición JSON recibida para crear mascota sin foto");
-        return procesarCreacionMascota(mascotaBody, null, authentication);
+        return procesarCreacionMascota(mascotaBody, null, authentication, request);
     }
 
-    /**
-     * Endpoint específico para crear mascotas con fotos usando multipart/form-data
-     * Este endpoint no especifica consumes para mayor flexibilidad
-     */
     @PostMapping("/con-foto")
     public ResponseEntity<?> createMascotaConFoto(
             @RequestParam("mascota") String mascotaJson,
             @RequestParam(value = "foto", required = false) MultipartFile foto,
-            Authentication authentication) {
+            Authentication authentication,
+            HttpServletRequest request) {
 
         logger.info("Petición multipart recibida para crear mascota con foto");
         logger.debug("Datos recibidos - mascotaJson: {}, foto: {}",
@@ -170,7 +213,7 @@ public class MascotaController {
         try {
             // Deserializar el JSON string a objeto Mascota
             Mascota mascota = objectMapper.readValue(mascotaJson, Mascota.class);
-            return procesarCreacionMascota(mascota, foto, authentication);
+            return procesarCreacionMascota(mascota, foto, authentication, request);
         } catch (Exception e) {
             logger.error("Error al procesar los datos multipart: {}", e.getMessage(), e);
             Map<String, Object> error = new HashMap<>();
@@ -184,7 +227,8 @@ public class MascotaController {
     private ResponseEntity<?> procesarCreacionMascota(
             Mascota mascota,
             MultipartFile foto,
-            Authentication authentication) {
+            Authentication authentication,
+            HttpServletRequest request) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -214,6 +258,7 @@ public class MascotaController {
             logger.info("Mascota creada con éxito: ID={}, Nombre={}", savedMascota.getId(), savedMascota.getNombre());
 
             // 5. Procesar la foto si existe
+            boolean fotoGuardada = false;
             if (foto != null && !foto.isEmpty()) {
                 try {
                     byte[] fotoBytes = foto.getBytes();
@@ -226,6 +271,7 @@ public class MascotaController {
                         response.put("advertencia", "La foto es demasiado grande y ha sido ignorada");
                     } else {
                         mascotaService.saveFoto(savedMascota.getId(), fotoBytes);
+                        fotoGuardada = true;
                         logger.info("Foto guardada para la mascota con ID: {}", savedMascota.getId());
                     }
                 } catch (IOException e) {
@@ -234,7 +280,12 @@ public class MascotaController {
                 }
             }
 
-            // 6. Devolver la respuesta exitosa
+            // 6. Establecer la URL de la foto si se guardó correctamente
+            if (fotoGuardada) {
+                savedMascota.setFotoUrl(buildFotoUrl(savedMascota.getId(), request));
+            }
+
+            // 7. Devolver la respuesta exitosa
             response.put("mascota", savedMascota);
             response.put("mensaje", "Mascota creada exitosamente");
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -304,17 +355,15 @@ public class MascotaController {
         byte[] foto = mascotaService.getFoto(id);
         if (foto != null) {
             logger.info("Foto obtenida correctamente para la mascota con ID: {}", id);
-            return ResponseEntity.ok(foto);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_JPEG) // Asumimos JPEG, podría ser dinámico según el tipo de imagen
+                    .body(foto);
         } else {
             logger.warn("Foto no encontrada para la mascota con ID: {}", id);
             return ResponseEntity.notFound().build();
         }
     }
 
-    /**
-     * Endpoint de diagnóstico para ayudar a depurar problemas con las solicitudes
-     * multipart
-     */
     @PostMapping("/diagnostico")
     public ResponseEntity<?> diagnosticarMultipart(
             @RequestParam(value = "mascota", required = false) String mascotaJson,
