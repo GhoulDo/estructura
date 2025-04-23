@@ -39,14 +39,15 @@ public class ClienteService {
 
     /**
      * Encuentra un cliente por el nombre de usuario o email.
-     * Primero busca el usuario por username o email, luego busca el cliente por el ID del usuario.
+     * Primero busca el usuario por username o email, luego busca el cliente por el
+     * ID del usuario.
      */
     public Cliente findByUsuarioUsername(String usernameOrEmail) {
         logger.debug("Buscando cliente por username o email: {}", usernameOrEmail);
         try {
             // Primero, intentar obtener el usuario por su username
             Optional<Usuario> usuario = usuarioRepository.findByUsername(usernameOrEmail);
-            
+
             // Si no lo encuentra por username, intentar por email
             if (!usuario.isPresent()) {
                 logger.debug("Usuario no encontrado por username, intentando con email: {}", usernameOrEmail);

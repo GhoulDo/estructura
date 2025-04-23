@@ -91,21 +91,21 @@ public class MascotaController {
     /**
      * Endpoint flexible para crear mascotas que acepta tanto form-data como JSON
      */
-    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE })
     public ResponseEntity<?> createMascota(
             @RequestParam(value = "mascota", required = false) String mascotaJson,
             @RequestPart(value = "mascota", required = false) Mascota mascotaDirecta,
             @RequestBody(required = false) Mascota mascotaBody,
             @RequestParam(value = "foto", required = false) MultipartFile foto,
             Authentication authentication) {
-        
-        logger.info("Petición recibida para crear mascota. Content-Type: {}", 
-                   (mascotaJson != null) ? "form-data con JSON string" : 
-                   (mascotaDirecta != null) ? "form-data con objeto" : 
-                   (mascotaBody != null) ? "application/json" : "desconocido");
-        
+
+        logger.info("Petición recibida para crear mascota. Content-Type: {}",
+                (mascotaJson != null) ? "form-data con JSON string"
+                        : (mascotaDirecta != null) ? "form-data con objeto"
+                                : (mascotaBody != null) ? "application/json" : "desconocido");
+
         Mascota mascota = null;
-        
+
         try {
             // Determinar cuál de los parámetros contiene los datos de la mascota
             if (mascotaJson != null && !mascotaJson.isEmpty()) {
@@ -123,13 +123,13 @@ public class MascotaController {
             } else {
                 logger.error("No se recibieron datos de mascota en ningún formato conocido");
                 return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Datos de mascota no encontrados", 
+                        .body(Map.of("error", "Datos de mascota no encontrados",
                                 "mensaje", "Debes enviar la mascota como JSON o como parte de un form-data"));
             }
-            
+
             // Continuar con el procesamiento normal
             return procesarCreacionMascota(mascota, foto, authentication);
-            
+
         } catch (Exception e) {
             logger.error("Error al procesar los datos de la mascota: {}", e.getMessage(), e);
             Map<String, Object> error = new HashMap<>();
@@ -271,7 +271,8 @@ public class MascotaController {
     }
 
     /**
-     * Endpoint de diagnóstico para ayudar a depurar problemas con las solicitudes multipart
+     * Endpoint de diagnóstico para ayudar a depurar problemas con las solicitudes
+     * multipart
      */
     @PostMapping("/diagnostico")
     public ResponseEntity<?> diagnosticarMultipart(
@@ -279,10 +280,10 @@ public class MascotaController {
             @RequestParam(value = "foto", required = false) MultipartFile foto,
             @RequestHeader Map<String, String> headers,
             Authentication authentication) {
-        
+
         Map<String, Object> diagnostico = new HashMap<>();
         diagnostico.put("headers_recibidos", headers);
-        
+
         // Diagnosticar los datos recibidos
         if (mascotaJson != null) {
             diagnostico.put("mascota_recibida", mascotaJson);
@@ -290,7 +291,7 @@ public class MascotaController {
         } else {
             diagnostico.put("mascota_recibida", "No se recibió ningún JSON de mascota");
         }
-        
+
         // Diagnosticar si se recibió un archivo
         if (foto != null) {
             Map<String, Object> fotoInfo = new HashMap<>();
@@ -302,12 +303,12 @@ public class MascotaController {
         } else {
             diagnostico.put("foto_info", "No se recibió ningún archivo");
         }
-        
+
         // Incluir información de autenticación
         if (authentication != null) {
             diagnostico.put("usuario_autenticado", authentication.getName());
         }
-        
+
         return ResponseEntity.ok(diagnostico);
     }
 }
