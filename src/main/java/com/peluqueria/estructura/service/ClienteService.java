@@ -38,19 +38,24 @@ public class ClienteService {
     }
 
     /**
-     * Encuentra un cliente por el nombre de usuario.
-     * Primero busca el usuario por username, luego busca el cliente por el ID del
-     * usuario.
+     * Encuentra un cliente por el nombre de usuario o email.
+     * Primero busca el usuario por username o email, luego busca el cliente por el ID del usuario.
      */
-    public Cliente findByUsuarioUsername(String username) {
-        logger.debug("Buscando cliente por username: {}", username);
+    public Cliente findByUsuarioUsername(String usernameOrEmail) {
+        logger.debug("Buscando cliente por username o email: {}", usernameOrEmail);
         try {
-            // Primero, obtener el usuario por su username
-            Optional<Usuario> usuario = usuarioRepository.findByUsername(username);
+            // Primero, intentar obtener el usuario por su username
+            Optional<Usuario> usuario = usuarioRepository.findByUsername(usernameOrEmail);
+            
+            // Si no lo encuentra por username, intentar por email
+            if (!usuario.isPresent()) {
+                logger.debug("Usuario no encontrado por username, intentando con email: {}", usernameOrEmail);
+                usuario = usuarioRepository.findByEmail(usernameOrEmail);
+            }
 
             if (!usuario.isPresent()) {
-                logger.warn("Usuario no encontrado con username: {}", username);
-                throw new RuntimeException("Usuario no encontrado con el username: " + username);
+                logger.warn("Usuario no encontrado con username o email: {}", usernameOrEmail);
+                throw new RuntimeException("Usuario no encontrado con el username o email: " + usernameOrEmail);
             }
 
             // Luego, buscar el cliente por el ID del usuario
@@ -58,12 +63,12 @@ public class ClienteService {
 
             if (!cliente.isPresent()) {
                 logger.warn("Cliente no encontrado para el usuario con ID: {}", usuario.get().getId());
-                throw new RuntimeException("Cliente no encontrado para el usuario: " + username);
+                throw new RuntimeException("Cliente no encontrado para el usuario: " + usernameOrEmail);
             }
 
             return cliente.get();
         } catch (Exception e) {
-            logger.error("Error al buscar cliente por username {}: {}", username, e.getMessage(), e);
+            logger.error("Error al buscar cliente por username/email {}: {}", usernameOrEmail, e.getMessage(), e);
             throw new RuntimeException("Error al buscar cliente: " + e.getMessage());
         }
     }
