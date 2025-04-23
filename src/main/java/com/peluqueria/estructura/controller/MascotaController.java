@@ -163,9 +163,9 @@ public class MascotaController {
             Authentication authentication) {
 
         logger.info("Petición multipart recibida para crear mascota con foto");
-        logger.debug("Datos recibidos - mascotaJson: {}, foto: {}", 
-                     mascotaJson, 
-                     (foto != null ? foto.getOriginalFilename() + ", " + foto.getContentType() : "null"));
+        logger.debug("Datos recibidos - mascotaJson: {}, foto: {}",
+                mascotaJson,
+                (foto != null ? foto.getOriginalFilename() + ", " + foto.getContentType() : "null"));
 
         try {
             // Deserializar el JSON string a objeto Mascota
