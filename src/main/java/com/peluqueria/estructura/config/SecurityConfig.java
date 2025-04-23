@@ -58,6 +58,8 @@ public class SecurityConfig {
                         // Mascotas
                         .requestMatchers(HttpMethod.GET, "/api/mascotas/**").hasAnyRole("ADMIN", "CLIENTE")
                         .requestMatchers(HttpMethod.POST, "/api/mascotas").hasRole("CLIENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/mascotas/con-foto").hasRole("CLIENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/mascotas/diagnostico").hasRole("CLIENTE")
                         .requestMatchers(HttpMethod.PUT, "/api/mascotas/**").hasRole("CLIENTE")
                         .requestMatchers(HttpMethod.DELETE, "/api/mascotas/**").hasRole("CLIENTE")
 

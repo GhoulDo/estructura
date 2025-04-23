@@ -140,6 +140,47 @@ public class MascotaController {
         }
     }
 
+    /**
+     * Endpoint para crear mascotas sólo con JSON (sin fotos)
+     */
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> createMascotaJson(
+            @RequestBody Mascota mascotaBody,
+            Authentication authentication) {
+
+        logger.info("Petición JSON recibida para crear mascota sin foto");
+        return procesarCreacionMascota(mascotaBody, null, authentication);
+    }
+
+    /**
+     * Endpoint específico para crear mascotas con fotos usando multipart/form-data
+     * Este endpoint no especifica consumes para mayor flexibilidad
+     */
+    @PostMapping("/con-foto")
+    public ResponseEntity<?> createMascotaConFoto(
+            @RequestParam("mascota") String mascotaJson,
+            @RequestParam(value = "foto", required = false) MultipartFile foto,
+            Authentication authentication) {
+
+        logger.info("Petición multipart recibida para crear mascota con foto");
+        logger.debug("Datos recibidos - mascotaJson: {}, foto: {}", 
+                     mascotaJson, 
+                     (foto != null ? foto.getOriginalFilename() + ", " + foto.getContentType() : "null"));
+
+        try {
+            // Deserializar el JSON string a objeto Mascota
+            Mascota mascota = objectMapper.readValue(mascotaJson, Mascota.class);
+            return procesarCreacionMascota(mascota, foto, authentication);
+        } catch (Exception e) {
+            logger.error("Error al procesar los datos multipart: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error al procesar los datos multipart");
+            error.put("mensaje", e.getMessage());
+            error.put("detalleError", e.toString());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
     private ResponseEntity<?> procesarCreacionMascota(
             Mascota mascota,
             MultipartFile foto,
