@@ -7,6 +7,7 @@ import com.peluqueria.estructura.service.ClienteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -84,17 +85,40 @@ public class MascotaController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<?> createMascota(
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> createMascotaMultipart(
             @RequestPart(value = "mascota") Mascota mascota,
             @RequestPart(value = "foto", required = false) MultipartFile foto,
             Authentication authentication) {
-        logger.info("Petición recibida para crear una nueva mascota para el usuario: {}", authentication.getName());
+        logger.info("Petición multipart recibida para crear una nueva mascota para el usuario: {}",
+                authentication.getName());
+
+        return procesarCreacionMascota(mascota, foto, authentication);
+    }
+
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> createMascotaJson(
+            @RequestBody Mascota mascota,
+            Authentication authentication) {
+        logger.info("Petición JSON recibida para crear una nueva mascota para el usuario: {}",
+                authentication.getName());
+
+        return procesarCreacionMascota(mascota, null, authentication);
+    }
+
+    private ResponseEntity<?> procesarCreacionMascota(
+            Mascota mascota,
+            MultipartFile foto,
+            Authentication authentication) {
 
         Map<String, Object> response = new HashMap<>();
 
         try {
-            // 1. Obtener el cliente asociado al usuario autenticado
+            // 1. Verificar y registrar los datos recibidos
+            logger.debug("Datos de mascota recibidos: nombre={}, tipo={}, raza={}, edad={}",
+                    mascota.getNombre(), mascota.getTipo(), mascota.getRaza(), mascota.getEdad());
+
+            // 2. Obtener el cliente asociado al usuario autenticado
             Cliente cliente = null;
             try {
                 cliente = clienteService.findByUsuarioUsername(authentication.getName());
@@ -107,14 +131,14 @@ public class MascotaController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
-            // 2. Asociar el cliente a la mascota
+            // 3. Asociar el cliente a la mascota
             mascota.setCliente(cliente);
 
-            // 3. Guardar la mascota
+            // 4. Guardar la mascota
             Mascota savedMascota = mascotaService.save(mascota);
             logger.info("Mascota creada con éxito: ID={}, Nombre={}", savedMascota.getId(), savedMascota.getNombre());
 
-            // 4. Procesar la foto si existe
+            // 5. Procesar la foto si existe
             if (foto != null && !foto.isEmpty()) {
                 try {
                     byte[] fotoBytes = foto.getBytes();
@@ -135,18 +159,11 @@ public class MascotaController {
                 }
             }
 
-            // 5. Devolver la respuesta exitosa
+            // 6. Devolver la respuesta exitosa
             response.put("mascota", savedMascota);
             response.put("mensaje", "Mascota creada exitosamente");
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
-        } catch (MultipartException e) {
-            // Error específico de formato multipart
-            logger.error("Error en el formato multipart de la solicitud: {}", e.getMessage(), e);
-            response.put("error", "Error en el formato de la solicitud");
-            response.put("mensaje", "Verifica que estés enviando correctamente los campos 'mascota' y 'foto'");
-            response.put("detalleError", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         } catch (Exception e) {
             // Error general
             logger.error("Error al crear la mascota: {} - Causa: {}",
