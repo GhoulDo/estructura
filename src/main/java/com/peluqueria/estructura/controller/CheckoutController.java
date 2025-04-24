@@ -2,13 +2,15 @@ package com.peluqueria.estructura.controller;
 
 import com.peluqueria.estructura.dto.CheckoutResumenDTO;
 import com.peluqueria.estructura.entity.Factura;
+import com.peluqueria.estructura.exception.ResourceNotFoundException;
+import com.peluqueria.estructura.exception.ValidationException;
 import com.peluqueria.estructura.service.CheckoutService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -26,30 +28,40 @@ public class CheckoutController {
         this.checkoutService = checkoutService;
     }
 
-    /**
-     * Endpoint para obtener el resumen del checkout
-     */
+    @GetMapping("/diagnostico")
+    public ResponseEntity<Map<String, Object>> diagnostico() {
+        Map<String, Object> info = new HashMap<>();
+        info.put("status", "Controlador de checkout funcionando correctamente");
+        info.put("timestamp", System.currentTimeMillis());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        info.put("authenticated", auth != null && auth.isAuthenticated());
+        info.put("username", auth != null ? auth.getName() : "no autenticado");
+
+        return ResponseEntity.ok(info);
+    }
+
     @GetMapping("/resumen")
-    public ResponseEntity<?> obtenerResumen(Authentication auth) {
+    public ResponseEntity<CheckoutResumenDTO> obtenerResumen(Authentication auth) {
         logger.info("GET /api/checkout/resumen - Usuario: {}", auth.getName());
 
         try {
             CheckoutResumenDTO resumen = checkoutService.obtenerResumen(auth);
             return ResponseEntity.ok(resumen);
+        } catch (ResourceNotFoundException e) {
+            logger.error("Recurso no encontrado: {}", e.getMessage());
+            throw e;
+        } catch (ValidationException e) {
+            logger.error("Error de validación: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
             logger.error("Error al obtener resumen de checkout: {}", e.getMessage(), e);
-            Map<String, Object> response = new HashMap<>();
-            response.put("mensaje", "Error al obtener el resumen de checkout");
-            response.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            throw new RuntimeException("Error al obtener el resumen de checkout: " + e.getMessage());
         }
     }
 
-    /**
-     * Endpoint para confirmar el checkout y crear la factura
-     */
     @PostMapping("/confirmar")
-    public ResponseEntity<?> confirmarCheckout(
+    public ResponseEntity<Factura> confirmarCheckout(
             Authentication auth,
             @RequestBody(required = false) Map<String, String> checkoutInfo) {
 
@@ -62,25 +74,15 @@ public class CheckoutController {
         try {
             Factura factura = checkoutService.confirmarCheckout(auth, checkoutInfo);
             return ResponseEntity.ok(factura);
+        } catch (ResourceNotFoundException e) {
+            logger.error("Recurso no encontrado: {}", e.getMessage());
+            throw e;
+        } catch (ValidationException e) {
+            logger.error("Error de validación: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
             logger.error("Error al confirmar checkout: {}", e.getMessage(), e);
-            Map<String, Object> response = new HashMap<>();
-            response.put("mensaje", "Error al confirmar la compra");
-            response.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            throw new RuntimeException("Error al confirmar la compra: " + e.getMessage());
         }
-    }
-
-    /**
-     * Endpoint para diagnosticar el estado del controlador
-     */
-    @GetMapping("/diagnostico")
-    public ResponseEntity<Map<String, Object>> diagnosticar(Authentication auth) {
-        Map<String, Object> diagnostico = new HashMap<>();
-        diagnostico.put("controlador", "CheckoutController");
-        diagnostico.put("status", "operativo");
-        diagnostico.put("usuario", auth.getName());
-        diagnostico.put("timestamp", System.currentTimeMillis());
-        return ResponseEntity.ok(diagnostico);
     }
 }

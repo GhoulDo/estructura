@@ -2,6 +2,8 @@ package com.peluqueria.estructura.service;
 
 import com.peluqueria.estructura.entity.DetalleFactura;
 import com.peluqueria.estructura.entity.Producto;
+import com.peluqueria.estructura.exception.ResourceNotFoundException;
+import com.peluqueria.estructura.exception.StockInsuficienteException;
 import com.peluqueria.estructura.repository.ProductoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class InventarioFacturaService {
@@ -29,7 +30,8 @@ public class InventarioFacturaService {
      * Verifica si hay suficiente stock para todos los productos de una lista de
      * detalles
      * 
-     * @throws RuntimeException si no hay suficiente stock
+     * @throws StockInsuficienteException si no hay suficiente stock
+     * @throws ResourceNotFoundException  si no se encuentra algún producto
      */
     public void verificarStockSuficiente(List<DetalleFactura> detalles) {
         logger.debug("Verificando stock para {} detalles", detalles != null ? detalles.size() : 0);
@@ -38,21 +40,20 @@ public class InventarioFacturaService {
 
         for (DetalleFactura detalle : detalles) {
             if (detalle.getProductoId() != null) {
-                Optional<Producto> productoOpt = productoRepository.findById(detalle.getProductoId());
+                Producto producto = productoRepository.findById(detalle.getProductoId())
+                        .orElseThrow(() -> {
+                            logger.error("Producto no encontrado con ID: {}", detalle.getProductoId());
+                            return new ResourceNotFoundException("Producto", "id", detalle.getProductoId());
+                        });
 
-                if (!productoOpt.isPresent()) {
-                    logger.error("Producto no encontrado con ID: {}", detalle.getProductoId());
-                    throw new RuntimeException("Producto no encontrado con ID: " + detalle.getProductoId());
-                }
-
-                Producto producto = productoOpt.get();
                 logger.debug("Verificando stock para producto: {}, disponible: {}, solicitado: {}",
                         producto.getNombre(), producto.getStock(), detalle.getCantidad());
 
                 if (producto.getStock() < detalle.getCantidad()) {
                     logger.warn("Stock insuficiente para producto: {}, disponible: {}, solicitado: {}",
                             producto.getNombre(), producto.getStock(), detalle.getCantidad());
-                    throw new RuntimeException("Stock insuficiente para el producto: " + producto.getNombre());
+                    throw new StockInsuficienteException(producto.getNombre(), producto.getStock(),
+                            detalle.getCantidad());
                 }
             }
         }
