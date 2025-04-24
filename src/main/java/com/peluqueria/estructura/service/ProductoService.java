@@ -13,7 +13,6 @@ public class ProductoService {
 
     private final ProductoRepository productoRepository;
 
-    @Autowired
     public ProductoService(ProductoRepository productoRepository) {
         this.productoRepository = productoRepository;
     }

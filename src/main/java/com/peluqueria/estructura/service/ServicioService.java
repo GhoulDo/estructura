@@ -2,7 +2,6 @@ package com.peluqueria.estructura.service;
 
 import com.peluqueria.estructura.entity.Servicio;
 import com.peluqueria.estructura.repository.ServicioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,7 +12,6 @@ public class ServicioService {
 
     private final ServicioRepository servicioRepository;
 
-    @Autowired
     public ServicioService(ServicioRepository servicioRepository) {
         this.servicioRepository = servicioRepository;
     }

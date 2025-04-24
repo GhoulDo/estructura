@@ -20,7 +20,6 @@ public class InventarioFacturaService {
     private final ProductoRepository productoRepository;
     private final ProductoService productoService;
 
-    @Autowired
     public InventarioFacturaService(ProductoRepository productoRepository, ProductoService productoService) {
         this.productoRepository = productoRepository;
         this.productoService = productoService;
