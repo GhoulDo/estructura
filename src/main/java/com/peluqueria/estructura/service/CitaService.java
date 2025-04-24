@@ -2,7 +2,6 @@ package com.peluqueria.estructura.service;
 
 import com.peluqueria.estructura.entity.Cita;
 import com.peluqueria.estructura.repository.CitaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -16,7 +15,6 @@ public class CitaService {
 
     private final CitaRepository citaRepository;
 
-    @Autowired
     public CitaService(CitaRepository citaRepository) {
         this.citaRepository = citaRepository;
     }

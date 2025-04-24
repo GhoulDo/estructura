@@ -8,7 +8,6 @@ import com.peluqueria.estructura.repository.UsuarioRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,7 +20,6 @@ public class ClienteService {
     private final ClienteRepository clienteRepository;
     private final UsuarioRepository usuarioRepository;
 
-    @Autowired
     public ClienteService(ClienteRepository clienteRepository, UsuarioRepository usuarioRepository) {
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
