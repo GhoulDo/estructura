@@ -88,54 +88,35 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/carrito/checkout/confirmar").hasRole("CLIENTE")
 
                         // Facturas (principal)
-                        .requestMatchers(HttpMethod.GET, "/api/facturas").hasAnyRole("ADMIN", "CLIENTE") // Ver facturas
-                                                                                                         // (ambos)
-                        .requestMatchers(HttpMethod.GET, "/api/facturas/**").hasAnyRole("ADMIN", "CLIENTE") // Ver
-                                                                                                            // detalle
-                                                                                                            // de
-                                                                                                            // factura
-                                                                                                            // (ambos)
-                        .requestMatchers(HttpMethod.POST, "/api/facturas").hasAnyRole("ADMIN", "CLIENTE") // Crear
-                                                                                                          // factura
-                                                                                                          // (ambos)
-                        .requestMatchers(HttpMethod.PUT, "/api/facturas/**").hasRole("ADMIN") // Actualizar factura
-                                                                                              // (solo admin)
-                        .requestMatchers(HttpMethod.DELETE, "/api/facturas/**").hasRole("ADMIN") // Eliminar factura
-                                                                                                 // (solo admin)
-                        .requestMatchers(HttpMethod.GET, "/api/facturas/cliente/**").hasAnyRole("ADMIN", "CLIENTE")
+                        .requestMatchers(HttpMethod.GET, "/api/facturas").hasAnyRole("ADMIN", "CLIENTE")
+                        .requestMatchers(HttpMethod.GET, "/api/facturas/{id}").hasAnyRole("ADMIN", "CLIENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/facturas").hasAnyRole("ADMIN", "CLIENTE")
+                        .requestMatchers(HttpMethod.PUT, "/api/facturas/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/facturas/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/facturas/cliente/{clienteId}")
+                        .hasAnyRole("ADMIN", "CLIENTE")
 
-                        // Detalles de factura
-                        .requestMatchers(HttpMethod.GET, "/api/facturas/**/detalles").hasAnyRole("ADMIN", "CLIENTE") // Ver
-                                                                                                                     // detalles
-                                                                                                                     // (ambos)
-                        .requestMatchers(HttpMethod.GET, "/api/facturas/**/detalles/**").hasAnyRole("ADMIN", "CLIENTE") // Ver
-                                                                                                                        // detalle
-                                                                                                                        // específico
-                                                                                                                        // (ambos)
-                        .requestMatchers(HttpMethod.POST, "/api/facturas/**/detalles").hasAnyRole("ADMIN", "CLIENTE") // Añadir
-                                                                                                                      // detalle
-                                                                                                                      // (ambos)
-                        .requestMatchers(HttpMethod.PUT, "/api/facturas/**/detalles/**").hasRole("ADMIN") // Modificar
-                                                                                                          // detalle
-                                                                                                          // (solo
-                                                                                                          // admin)
-                        .requestMatchers(HttpMethod.DELETE, "/api/facturas/**/detalles/**").hasRole("ADMIN") // Eliminar
-                                                                                                             // detalle
-                                                                                                             // (solo
-                                                                                                             // admin)
+                        // Detalles de factura - CORREGIDO LOS PATRONES
+                        .requestMatchers(HttpMethod.GET, "/api/facturas/{facturaId}/detalles")
+                        .hasAnyRole("ADMIN", "CLIENTE")
+                        .requestMatchers(HttpMethod.GET, "/api/facturas/{facturaId}/detalles/{detalleId}")
+                        .hasAnyRole("ADMIN", "CLIENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/facturas/{facturaId}/detalles")
+                        .hasAnyRole("ADMIN", "CLIENTE")
+                        .requestMatchers(HttpMethod.PUT, "/api/facturas/{facturaId}/detalles/{detalleId}")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/facturas/{facturaId}/detalles/{detalleId}")
+                        .hasRole("ADMIN")
 
                         // Facturación unificada
-                        .requestMatchers(HttpMethod.POST, "/api/facturacion-unificada/facturar-cita/**")
-                        .hasRole("ADMIN") // Facturar cita (solo admin)
-                        .requestMatchers(HttpMethod.PUT, "/api/facturacion-unificada/agregar-productos/**")
-                        .hasAnyRole("ADMIN", "CLIENTE") // Agregar productos (ambos)
-                        .requestMatchers(HttpMethod.PUT, "/api/facturacion-unificada/pagar/**").hasRole("ADMIN") // Marcar
-                                                                                                                 // como
-                                                                                                                 // pagada
-                                                                                                                 // (solo
-                                                                                                                 // admin)
-                        .requestMatchers(HttpMethod.GET, "/api/facturacion-unificada/cliente/**")
-                        .hasAnyRole("ADMIN", "CLIENTE") // Ver facturas de cliente (ambos)
+                        .requestMatchers(HttpMethod.POST, "/api/facturacion-unificada/facturar-cita/{citaId}")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/facturacion-unificada/agregar-productos/{facturaId}")
+                        .hasAnyRole("ADMIN", "CLIENTE")
+                        .requestMatchers(HttpMethod.PUT, "/api/facturacion-unificada/pagar/{facturaId}")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/facturacion-unificada/cliente/{clienteId}")
+                        .hasAnyRole("ADMIN", "CLIENTE")
 
                         // Checkout (acceso público para diagnóstico, pero endpoints restringidos)
                         .requestMatchers(HttpMethod.GET, "/api/checkout/diagnostico").permitAll()
