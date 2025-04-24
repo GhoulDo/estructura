@@ -70,4 +70,17 @@ public class CheckoutController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+
+    /**
+     * Endpoint para diagnosticar el estado del controlador
+     */
+    @GetMapping("/diagnostico")
+    public ResponseEntity<Map<String, Object>> diagnosticar(Authentication auth) {
+        Map<String, Object> diagnostico = new HashMap<>();
+        diagnostico.put("controlador", "CheckoutController");
+        diagnostico.put("status", "operativo");
+        diagnostico.put("usuario", auth.getName());
+        diagnostico.put("timestamp", System.currentTimeMillis());
+        return ResponseEntity.ok(diagnostico);
+    }
 }

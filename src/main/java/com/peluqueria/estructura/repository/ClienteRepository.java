@@ -12,10 +12,9 @@ import java.util.Optional;
 public interface ClienteRepository extends MongoRepository<Cliente, String> {
     Optional<Cliente> findByUsuarioId(String usuarioId);
 
-    // Consulta para buscar clientes por el username del usuario asociado
-    @Query("{'usuario.username': {$regex: '^?0$', $options: 'i'}}")
-    List<Cliente> findByUsuarioUsername(String username);
+    @Query("{'email': ?0}")
+    Optional<Cliente> findByEmail(String email);
 
-    // Consulta para buscar por email del cliente
-    List<Cliente> findByEmail(String email);
+    @Query("{'usuario.username': ?0}")
+    List<Cliente> findByUsuarioUsername(String username);
 }

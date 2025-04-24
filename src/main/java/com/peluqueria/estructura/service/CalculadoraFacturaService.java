@@ -17,10 +17,10 @@ public class CalculadoraFacturaService {
         if (detalle.getPrecioUnitario() == null) {
             return BigDecimal.ZERO;
         }
-        
+
         return detalle.getPrecioUnitario().multiply(new BigDecimal(detalle.getCantidad()));
     }
-    
+
     /**
      * Calcula el total de una factura sumando todos sus detalles
      */
@@ -28,28 +28,36 @@ public class CalculadoraFacturaService {
         if (detalles == null || detalles.isEmpty()) {
             return BigDecimal.ZERO;
         }
-        
+
         return detalles.stream()
-                .map(DetalleFactura::getSubtotal)
+                .map(detalle -> {
+                    if (detalle.getSubtotal() != null) {
+                        return detalle.getSubtotal();
+                    } else {
+                        return calcularSubtotal(detalle);
+                    }
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
-    
+
     /**
      * Actualiza los cálculos de una factura completa
      */
     public Factura recalcularFactura(Factura factura) {
         if (factura.getDetalles() != null) {
             // Recalcular cada subtotal
-            factura.getDetalles().forEach(detalle -> 
-                detalle.setSubtotal(calcularSubtotal(detalle))
-            );
-            
+            factura.getDetalles().forEach(detalle -> {
+                if (detalle.getSubtotal() == null || detalle.getPrecioUnitario() == null) {
+                    detalle.setSubtotal(calcularSubtotal(detalle));
+                }
+            });
+
             // Actualizar total
             factura.setTotal(calcularTotalFactura(factura.getDetalles()));
         } else {
             factura.setTotal(BigDecimal.ZERO);
         }
-        
+
         return factura;
     }
 }
