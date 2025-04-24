@@ -47,6 +47,8 @@ public class Carrito {
                 return;
             }
         }
+        // Si llegamos aquí, el producto no estaba en el carrito
+        throw new RuntimeException("Producto no encontrado en el carrito");
     }
 
     // Método para eliminar un item
