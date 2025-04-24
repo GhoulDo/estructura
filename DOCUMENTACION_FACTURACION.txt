@@ -1,0 +1,780 @@
+# DOCUMENTACIÓN DEL SISTEMA DE FACTURACIÓN
+
+
+## FLUJO GENERAL DE FACTURACIÓN
+
+El sistema ofrece dos flujos principales de facturación:
+
+### 1. Flujo de Administrador (Facturación de Servicios)
+
+1. **Selección de Cita**: El administrador selecciona una cita completada.
+2. **Facturación de Servicio**: Se crea una factura asociada a la cita y su servicio correspondiente.
+3. **Adición de Productos**: Opcionalmente, se agregan productos utilizados durante el servicio.
+4. **Cálculo de Totales**: El sistema calcula automáticamente los subtotales y el total.
+5. **Actualización de Inventario**: El stock de los productos se reduce automáticamente.
+6. **Finalización de Pago**: El administrador marca la factura como pagada cuando recibe el pago.
+
+### 2. Flujo de Cliente (Compra de Productos)
+
+1. **Exploración de Productos**: El cliente navega por el catálogo de productos disponibles.
+2. **Gestión del Carrito**: 
+   - Agrega productos al carrito
+   - Visualiza y modifica el contenido del carrito
+   - Ajusta cantidades o elimina productos
+3. **Proceso de Checkout**:
+   - Revisa el resumen de su compra
+   - Confirma los detalles de facturación
+   - Finaliza la compra
+4. **Generación de Factura**: El sistema genera automáticamente una factura con los productos del carrito.
+5. **Actualización de Inventario**: El stock se actualiza según los productos comprados.
+6. **Visualización de Factura**: El cliente puede ver su factura generada en su historial.
+
+## COMPONENTES DEL SISTEMA
+
+### 1. Entidades Principales
+
+- **Factura**: Documento principal que contiene la información del cliente y el resumen financiero.
+- **DetalleFactura**: Items individuales (productos o servicios) incluidos en una factura.
+- **Carrito**: Almacenamiento temporal de los productos seleccionados por un cliente.
+- **CarritoItem**: Representa cada producto añadido al carrito con su cantidad y precio.
+
+### 2. Servicios Core
+
+- **FacturaService**: Gestión básica de facturas (CRUD).
+- **FacturacionUnificadaService**: Coordinación del proceso completo de facturación.
+- **CarritoService**: Gestión del carrito de compras (añadir, actualizar, eliminar productos).
+- **CheckoutService**: Proceso de finalización de compra y conversión de carrito a factura.
+- **InventarioFacturaService**: Gestión del stock durante la facturación.
+- **CalculadoraFacturaService**: Cálculo de subtotales y totales.
+
+### 3. Controllers
+
+- **FacturaController**: Endpoints básicos para manipular facturas.
+- **DetalleFacturaController**: Gestión de los detalles de una factura.
+- **FacturacionUnificadaController**: Endpoints especializados para casos de uso complejos.
+- **CarritoController**: Gestión del carrito de compras del cliente.
+- **CheckoutController**: Finalización del proceso de compra.
+
+## FLUJO DETALLADO DEL CARRITO DE COMPRAS
+
+El proceso de compra para un cliente sigue esta secuencia específica:
+
+### 1. GESTIÓN DEL CARRITO
+
+#### 1.1. Creación del Carrito
+
+- Cuando el cliente inicia sesión, el sistema verifica si ya existe un carrito para ese usuario.
+- Si no existe, se crea un nuevo carrito vacío asociado al ID del cliente.
+- El carrito se almacena temporalmente en memoria mediante un Map en CarritoService.
+
+#### 1.2. Añadir Productos al Carrito
+
+- El cliente selecciona un producto y especifica la cantidad.
+- El sistema realiza las siguientes validaciones:
+  - Verifica que el producto exista
+  - Comprueba que haya suficiente stock
+  - Valida que la cantidad sea positiva
+- Si ya existe el producto en el carrito, se actualiza la cantidad sumando la nueva.
+- Si no existe, se crea un nuevo CarritoItem.
+- El sistema recalcula automáticamente el total del carrito.
+
+#### 1.3. Visualizar el Carrito
+
+- El cliente puede ver en cualquier momento el contenido actual de su carrito.
+- La información incluye:
+  - Lista de productos con nombres, cantidades y precios unitarios
+  - Subtotales por producto
+  - Total del carrito
+
+#### 1.4. Modificar el Carrito
+
+- El cliente puede:
+  - Actualizar la cantidad de productos específicos
+  - Eliminar productos individuales
+  - Vaciar completamente el carrito
+- Con cada modificación, el sistema:
+  - Valida el stock disponible
+  - Recalcula los subtotales
+  - Actualiza el total del carrito
+
+### 2. PROCESO DE CHECKOUT
+
+#### 2.1. Resumen de Compra
+
+- El cliente solicita realizar el checkout.
+- El sistema genera un resumen que incluye:
+  - Datos del cliente (nombre, email)
+  - Lista completa de productos a comprar
+  - Cantidades y precios
+  - Total a pagar
+  - Verificación de disponibilidad de stock
+
+#### 2.2. Confirmación de Compra
+
+- El cliente revisa el resumen y confirma la compra.
+- Puede proporcionar información adicional como:
+  - Dirección de entrega
+  - Método de pago
+  - Comentarios adicionales
+
+#### 2.3. Generación de Factura
+
+El sistema realiza las siguientes operaciones en una transacción única:
+
+1. Verifica una última vez la disponibilidad de stock para todos los productos.
+2. Crea una nueva factura asociada al cliente.
+3. Convierte cada CarritoItem en un DetalleFactura.
+4. Calcula todos los subtotales y el total.
+5. Guarda la factura en la base de datos.
+6. Actualiza el inventario reduciendo el stock.
+7. Vacía el carrito del cliente.
+8. Devuelve la factura generada al cliente.
+
+### 3. POST-COMPRA
+
+- El cliente recibe la confirmación de su compra.
+- Puede acceder a su historial de facturas.
+- Puede ver el detalle completo de cada factura.
+
+## DIAGRAMA DE SECUENCIA DEL PROCESO DE FACTURACIÓN CON CARRITO
+
+```
+CLIENTE                     SISTEMA                       BASE DE DATOS
+   |                           |                               |
+   |-- Explorar productos ---->|                               |
+   |<---- Lista productos -----|                               |
+   |                           |                               |
+   |-- Agregar al carrito ---->|                               |
+   |                           |-- Verificar stock ----------->|
+   |                           |<-- Confirmación stock --------|
+   |<-- Producto agregado -----|                               |
+   |                           |                               |
+   |-- Solicitar checkout ---->|                               |
+   |<---- Resumen compra ------|                               |
+   |                           |                               |
+   |-- Confirmar compra ------>|                               |
+   |                           |-- Transacción inicio -------->|
+   |                           |                               |
+   |                           |-- Crear factura ------------->|
+   |                           |<-- Factura creada ------------|
+   |                           |                               |
+   |                           |-- Actualizar stock ---------->|
+   |                           |<-- Stock actualizado ----------|
+   |                           |                               |
+   |                           |-- Vaciar carrito ------------>|
+   |                           |<-- Carrito vaciado -----------|
+   |                           |                               |
+   |                           |-- Transacción completada ---->|
+   |<-- Factura generada ------|                               |
+   |                           |                               |
+```
+
+## PERMISOS DEL SISTEMA
+
+### ADMINISTRADOR (ROLE_ADMIN)
+- Ver todas las facturas del sistema
+- Crear facturas a partir de citas y servicios
+- Modificar facturas existentes
+- Eliminar facturas
+- Marcar facturas como pagadas
+- Agregar detalles a cualquier factura
+- Eliminar detalles de facturas
+
+### CLIENTE (ROLE_CLIENTE)
+- Ver únicamente sus propias facturas
+- Crear facturas a partir de productos (mediante carrito)
+- Agregar productos a sus facturas pendientes
+- Gestionar su propio carrito de compras
+- Realizar proceso de checkout
+- No puede modificar facturas marcadas como pagadas
+- No puede eliminar facturas
+- No puede marcar facturas como pagadas
+
+## ENDPOINTS DETALLADOS
+
+### 1. CARRITO DE COMPRAS (CLIENTE)
+
+#### Agregar producto al carrito
+
+```http
+POST /api/carrito/agregar
+Content-Type: application/json
+
+{
+  "productoId": "prod123",
+  "cantidad": 2
+}
+```
+
+**Respuesta:**
+```json
+{
+  "clienteId": "client001",
+  "items": [
+    {
+      "productoId": "prod123",
+      "nombre": "Shampoo premium",
+      "cantidad": 2,
+      "precioUnitario": 15.50,
+      "subtotal": 31.00
+    }
+  ],
+  "total": 31.00
+}
+```
+
+#### Obtener contenido del carrito
+
+```http
+GET /api/carrito
+```
+
+**Respuesta:**
+```json
+{
+  "clienteId": "client001",
+  "items": [
+    {
+      "productoId": "prod123",
+      "nombre": "Shampoo premium",
+      "cantidad": 2,
+      "precioUnitario": 15.50,
+      "subtotal": 31.00
+    },
+    {
+      "productoId": "prod456",
+      "nombre": "Cepillo desenredante",
+      "cantidad": 1,
+      "precioUnitario": 22.50,
+      "subtotal": 22.50
+    }
+  ],
+  "total": 53.50
+}
+```
+
+#### Actualizar cantidad de un producto
+
+```http
+PUT /api/carrito/actualizar
+Content-Type: application/json
+
+{
+  "productoId": "prod123",
+  "cantidad": 3
+}
+```
+
+**Respuesta:** Carrito actualizado con la nueva cantidad y totales recalculados.
+
+#### Eliminar un producto del carrito
+
+```http
+DELETE /api/carrito/eliminar/{productoId}
+```
+
+**Respuesta:** Carrito actualizado sin el producto eliminado.
+
+#### Vaciar el carrito
+
+```http
+DELETE /api/carrito/vaciar
+```
+
+**Respuesta:** HTTP 204 No Content (carrito vaciado correctamente).
+
+### 2. CHECKOUT (CLIENTE)
+
+#### Obtener resumen de compra
+
+```http
+GET /api/checkout/resumen
+```
+
+**Respuesta:**
+```json
+{
+  "items": [
+    {
+      "productoId": "prod123",
+      "nombre": "Shampoo premium",
+      "cantidad": 3,
+      "precioUnitario": 15.50,
+      "subtotal": 46.50
+    },
+    {
+      "productoId": "prod456",
+      "nombre": "Cepillo desenredante",
+      "cantidad": 1,
+      "precioUnitario": 22.50,
+      "subtotal": 22.50
+    }
+  ],
+  "subtotal": 69.00,
+  "total": 69.00,
+  "clienteNombre": "Juan Pérez",
+  "clienteEmail": "juan@example.com",
+  "stockDisponible": true
+}
+```
+
+#### Confirmar compra
+
+```http
+POST /api/checkout/confirmar
+Content-Type: application/json
+
+{
+  "direccionEntrega": "Calle Principal #123",
+  "metodoPago": "TARJETA"
+}
+```
+
+**Respuesta:** Factura generada con todos los detalles.
+
+### 3. FACTURACIÓN UNIFICADA
+
+#### Facturar una cita (crear factura a partir de una cita) - ADMIN
+
+```http
+POST /api/facturacion-unificada/facturar-cita/{citaId}
+Content-Type: application/json
+
+{
+  "productosIds": ["prod123", "prod456"],
+  "cantidades": [1, 2]
+}
+```
+
+Ejemplo de respuesta:
+```json
+{
+  "id": "fact001",
+  "cliente": {
+    "id": "client001",
+    "nombre": "Juan Perez",
+    "email": "juan@example.com"
+  },
+  "fecha": "2023-06-15T14:30:00",
+  "total": 85.50,
+  "estado": "PENDIENTE",
+  "detalles": [
+    {
+      "id": "det001",
+      "servicioId": "serv001",
+      "servicioNombre": "Corte de pelo",
+      "cantidad": 1,
+      "precioUnitario": 25.00,
+      "subtotal": 25.00
+    },
+    {
+      "id": "det002",
+      "productoId": "prod123",
+      "productoNombre": "Shampoo premium",
+      "cantidad": 1,
+      "precioUnitario": 15.50,
+      "subtotal": 15.50
+    },
+    {
+      "id": "det003",
+      "productoId": "prod456",
+      "productoNombre": "Cepillo desenredante",
+      "cantidad": 2,
+      "precioUnitario": 22.50,
+      "subtotal": 45.00
+    }
+  ]
+}
+```
+
+#### Agregar productos a una factura existente - ADMIN/CLIENTE
+
+```http
+PUT /api/facturacion-unificada/agregar-productos/{facturaId}
+Content-Type: application/json
+
+{
+  "productosIds": ["prod789"],
+  "cantidades": [1]
+}
+```
+
+Ejemplo de respuesta: Se devuelve la factura actualizada con el nuevo producto
+
+#### Marcar una factura como pagada - ADMIN
+
+```http
+PUT /api/facturacion-unificada/pagar/{facturaId}
+```
+
+Ejemplo de respuesta:
+```json
+{
+  "id": "fact001",
+  "estado": "PAGADA",
+  "total": 85.50,
+  "fecha": "2023-06-15T14:30:00",
+  "cliente": {...},
+  "detalles": [...]
+}
+```
+
+#### Obtener facturas de un cliente - ADMIN/CLIENTE
+
+```http
+GET /api/facturacion-unificada/cliente/{clienteId}
+```
+
+### 4. GESTIÓN DE FACTURAS
+
+#### Obtener todas las facturas - ADMIN/CLIENTE (filtrado automático)
+
+```http
+GET /api/facturas
+```
+
+Los administradores pueden ver todas las facturas.
+Los clientes solo ven sus propias facturas.
+
+#### Obtener una factura por ID - ADMIN/CLIENTE (validación de propiedad)
+
+```http
+GET /api/facturas/{facturaId}
+```
+
+#### Crear una nueva factura manualmente - ADMIN/CLIENTE
+
+```http
+POST /api/facturas
+Content-Type: application/json
+
+{
+  "cliente": {
+    "id": "client001"
+  },
+  "detalles": [
+    {
+      "productoId": "prod123",
+      "cantidad": 2
+    }
+  ]
+}
+```
+
+#### Obtener el total de una factura - ADMIN/CLIENTE
+
+```http
+GET /api/facturas/{facturaId}/total
+```
+
+### 5. GESTIÓN DE DETALLES DE FACTURA
+
+#### Obtener todos los detalles de una factura - ADMIN/CLIENTE
+
+```http
+GET /api/facturas/{facturaId}/detalles
+```
+
+#### Obtener un detalle específico - ADMIN/CLIENTE
+
+```http
+GET /api/facturas/{facturaId}/detalles/{detalleId}
+```
+
+#### Agregar un detalle a una factura - ADMIN/CLIENTE
+
+```http
+POST /api/facturas/{facturaId}/detalles
+Content-Type: application/json
+
+{
+  "productoId": "prod123",
+  "cantidad": 1
+}
+```
+
+O para un servicio:
+
+```http
+POST /api/facturas/{facturaId}/detalles
+Content-Type: application/json
+
+{
+  "servicioId": "serv001",
+  "cantidad": 1
+}
+```
+
+#### Modificar un detalle existente - ADMIN
+
+```http
+PUT /api/facturas/{facturaId}/detalles/{detalleId}
+Content-Type: application/json
+
+{
+  "cantidad": 3
+}
+```
+
+#### Eliminar un detalle de factura - ADMIN
+
+```http
+DELETE /api/facturas/{facturaId}/detalles/{detalleId}
+```
+
+## ESTRUCTURA DE LOS OBJETOS
+
+### Carrito
+
+```json
+{
+  "clienteId": "string",
+  "items": [
+    {
+      "productoId": "string",
+      "nombre": "string",
+      "cantidad": "integer",
+      "precioUnitario": "decimal",
+      "subtotal": "decimal"
+    }
+  ],
+  "total": "decimal"
+}
+```
+
+### Factura
+
+```json
+{
+  "id": "string",
+  "cliente": {
+    "id": "string",
+    "nombre": "string",
+    "email": "string"
+  },
+  "fecha": "datetime",
+  "total": "decimal",
+  "estado": "string (PENDIENTE, PAGADA, CANCELADA)",
+  "detalles": [
+    {
+      "id": "string",
+      "productoId": "string (opcional)",
+      "productoNombre": "string (opcional)",
+      "servicioId": "string (opcional)",
+      "servicioNombre": "string (opcional)",
+      "cantidad": "integer",
+      "precioUnitario": "decimal",
+      "subtotal": "decimal"
+    }
+  ]
+}
+```
+
+### DetalleFactura
+
+```json
+{
+  "id": "string",
+  "productoId": "string (opcional)",
+  "productoNombre": "string (opcional)",
+  "servicioId": "string (opcional)",
+  "servicioNombre": "string (opcional)",
+  "cantidad": "integer",
+  "precioUnitario": "decimal",
+  "subtotal": "decimal"
+}
+```
+
+## CASOS DE USO COMUNES
+
+### 1. Compra de productos por el cliente
+
+1. El cliente accede al catálogo de productos (GET /api/productos).
+2. Añade productos a su carrito (POST /api/carrito/agregar).
+3. Revisa el contenido del carrito (GET /api/carrito).
+4. Ajusta cantidades si es necesario (PUT /api/carrito/actualizar).
+5. Solicita el resumen de checkout (GET /api/checkout/resumen).
+6. Confirma la compra (POST /api/checkout/confirmar).
+7. El sistema:
+   - Genera la factura automáticamente
+   - Reduce el stock de los productos
+   - Vacía el carrito
+   - Devuelve la factura generada
+8. El cliente puede ver su factura en el historial (GET /api/facturas).
+
+### 2. Facturación de una cita completada (ADMIN)
+
+1. Una mascota completa un servicio (cita).
+2. El administrador factura la cita: `POST /api/facturacion-unificada/facturar-cita/{citaId}`.
+   - Opcionalmente agrega productos usados.
+3. El sistema:
+   - Marca la cita como facturada.
+   - Reduce el stock de los productos.
+   - Calcula el total automáticamente.
+4. El cliente recibe la factura y efectúa el pago.
+5. El administrador marca la factura como pagada: `PUT /api/facturacion-unificada/pagar/{facturaId}`.
+
+### 3. Venta de productos sin servicio (ADMIN)
+
+1. El cliente solicita productos sin servicio asociado.
+2. El administrador crea una nueva factura: `POST /api/facturas`.
+3. Agrega los productos solicitados: `POST /api/facturas/{facturaId}/detalles`.
+4. El sistema actualiza el stock automáticamente.
+5. Se marca como pagada tras el pago: `PUT /api/facturacion-unificada/pagar/{facturaId}`.
+
+### 4. Consulta de facturas por cliente
+
+1. El cliente inicia sesión.
+2. El sistema muestra solo sus facturas: `GET /api/facturas`.
+3. El cliente puede ver detalles de cada factura.
+
+## REGLAS DE NEGOCIO IMPORTANTES
+
+1. **Validación de stock**: Antes de agregar un producto al carrito, se verifica que haya suficiente stock.
+2. **Validación de stock en checkout**: Se verifica nuevamente la disponibilidad de stock antes de confirmar la compra.
+3. **Transaccionalidad**: Todo el proceso de generación de factura y actualización de inventario se maneja en una transacción única.
+4. **Factura como fuente de verdad**: La factura generada es el registro definitivo de la transacción.
+5. **Carrito persistente**: El carrito se mantiene durante toda la sesión del usuario.
+6. **Recálculo automático**: Cualquier cambio en el carrito recalcula automáticamente los totales.
+7. **Seguridad**: Los clientes solo pueden ver y modificar su propio carrito.
+8. **Seguridad en facturas**: Los clientes solo pueden ver sus propias facturas.
+9. **Facturas pendientes**: Las facturas generadas desde el carrito quedan en estado PENDIENTE.
+10. **Solo Admin marca como pagada**: Solo los administradores pueden marcar una factura como PAGADA.
+
+## MANEJO DE ERRORES COMUNES
+
+1. **Stock insuficiente**: Se devuelve un error claro indicando qué producto no tiene stock.
+2. **Cita ya facturada**: Se notifica que la cita ya tiene una factura asociada.
+3. **Acceso no autorizado**: Los clientes no pueden ver facturas de otros clientes.
+4. **Error en cálculos**: Diagnóstico de problemas con los cálculos de totales.
+5. **Carrito vacío**: Error al intentar proceder al checkout con carrito vacío.
+6. **Producto no disponible**: Error al intentar agregar un producto descontinuado o sin stock.
+
+## RECOMENDACIONES PARA DESARROLLADORES
+
+1. **Verificación de permisos**: Siempre verificar que el cliente solo acceda a su propio carrito.
+2. **Validación temprana**: Validar la disponibilidad de stock antes de procesar operaciones que lo modifiquen.
+3. **Manejo de transacciones**: Usar @Transactional en operaciones que modifican múltiples entidades.
+4. **Idempotencia**: Los endpoints deben ser idempotentes cuando sea posible.
+5. **Logging**: Mantener logs detallados de las operaciones de carrito y facturación.
+6. **Cacheo**: Considerar cachear los productos frecuentemente vistos para mejorar rendimiento.
+7. **Pruebas**: Realizar pruebas exhaustivas de los flujos críticos, especialmente checkout.
+
+## EJEMPLOS DE IMPLEMENTACIÓN CLIENTE
+
+### JavaScript (React)
+
+```javascript
+// Ejemplo: Agregar producto al carrito
+async function agregarAlCarrito(productoId, cantidad) {
+  try {
+    const response = await fetch('/api/carrito/agregar', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ productoId, cantidad })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.mensaje || 'Error al añadir producto');
+    }
+    
+    const carrito = await response.json();
+    return carrito;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+// Ejemplo: Proceso de checkout completo
+async function procesarCheckout(datosPago) {
+  try {
+    // 1. Obtener resumen
+    const resumen = await fetch('/api/checkout/resumen', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).then(res => res.json());
+    
+    // 2. Verificar stock
+    if (!resumen.stockDisponible) {
+      throw new Error('Algunos productos no tienen stock suficiente');
+    }
+    
+    // 3. Confirmar compra
+    const factura = await fetch('/api/checkout/confirmar', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(datosPago)
+    }).then(res => res.json());
+    
+    return { resumen, factura };
+  } catch (error) {
+    console.error('Error en checkout:', error);
+    throw error;
+  }
+}
+```
+
+### Java (Spring RestTemplate)
+
+```java
+// Ejemplo: Agregar producto al carrito
+public Carrito agregarProductoAlCarrito(String productoId, int cantidad) {
+    Map<String, Object> request = new HashMap<>();
+    request.put("productoId", productoId);
+    request.put("cantidad", cantidad);
+    
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.setBearerAuth(tokenService.getCurrentToken());
+    
+    HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+    
+    ResponseEntity<Carrito> response = restTemplate.exchange(
+        "/api/carrito/agregar",
+        HttpMethod.POST,
+        entity,
+        Carrito.class
+    );
+    
+    return response.getBody();
+}
+
+// Ejemplo: Proceso de checkout
+public Factura realizarCheckout(Map<String, String> datosPago) {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.setBearerAuth(tokenService.getCurrentToken());
+    
+    // Obtener resumen
+    ResponseEntity<CheckoutResumen> resumenResponse = restTemplate.exchange(
+        "/api/checkout/resumen",
+        HttpMethod.GET,
+        new HttpEntity<>(headers),
+        CheckoutResumen.class
+    );
+    
+    CheckoutResumen resumen = resumenResponse.getBody();
+    if (!resumen.isStockDisponible()) {
+        throw new RuntimeException("Stock insuficiente");
+    }
+    
+    // Confirmar compra
+    HttpEntity<Map<String, String>> entity = new HttpEntity<>(datosPago, headers);
+    ResponseEntity<Factura> facturaResponse = restTemplate.exchange(
+        "/api/checkout/confirmar",
+        HttpMethod.POST,
+        entity,
+        Factura.class
+    );
+    
+    return facturaResponse.getBody();
+}
+```
+
