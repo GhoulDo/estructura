@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -29,8 +30,11 @@ public class CarritoController {
      * Obtiene el contenido del carrito del usuario autenticado
      */
     @GetMapping
-    public ResponseEntity<?> getCarrito(Authentication auth) {
-        logger.info("GET /api/carrito - Usuario: {}", auth.getName());
+    public ResponseEntity<?> getCarrito() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        logger.info("GET /api/carrito - Usuario: {}, Auth principal: {}, Auth details: {}",
+                auth.getName(), auth.getPrincipal(), auth.getDetails());
+
         try {
             Carrito carrito = carritoService.getCarrito(auth);
             return ResponseEntity.ok(carrito);
@@ -39,6 +43,13 @@ public class CarritoController {
             Map<String, Object> response = new HashMap<>();
             response.put("mensaje", "Error al obtener el carrito");
             response.put("error", e.getMessage());
+
+            // Para diagnóstico, incluir información sobre la autenticación
+            response.put("auth_info", Map.of(
+                    "username", auth.getName(),
+                    "authorities", auth.getAuthorities().toString(),
+                    "authenticated", auth.isAuthenticated()));
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
@@ -147,6 +158,33 @@ public class CarritoController {
             response.put("mensaje", "Error al vaciar el carrito");
             response.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    /**
+     * Endpoint de diagnóstico para ayudar a resolver problemas de autenticación
+     */
+    @GetMapping("/diagnostico")
+    public ResponseEntity<?> diagnosticarAutenticacion(Authentication auth) {
+        Map<String, Object> diagnostico = new HashMap<>();
+
+        try {
+            diagnostico.put("auth_recibida", auth != null);
+
+            if (auth != null) {
+                diagnostico.put("nombre_usuario", auth.getName());
+                diagnostico.put("autoridades", auth.getAuthorities());
+                diagnostico.put("autenticado", auth.isAuthenticated());
+                diagnostico.put("detalles", auth.getDetails());
+                diagnostico.put("principal_tipo", auth.getPrincipal().getClass().getName());
+            } else {
+                diagnostico.put("error", "No hay autenticación");
+            }
+
+            return ResponseEntity.ok(diagnostico);
+        } catch (Exception e) {
+            diagnostico.put("error", "Error al procesar diagnóstico: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(diagnostico);
         }
     }
 }

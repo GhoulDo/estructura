@@ -7,6 +7,7 @@ import com.peluqueria.estructura.entity.Producto;
 import com.peluqueria.estructura.entity.Usuario;
 import com.peluqueria.estructura.repository.ClienteRepository;
 import com.peluqueria.estructura.repository.ProductoRepository;
+import com.peluqueria.estructura.repository.UsuarioRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,39 +25,47 @@ public class CarritoService {
     private final Map<String, Carrito> carritos = new HashMap<>();
     private final ProductoRepository productoRepository;
     private final ClienteRepository clienteRepository;
-    private final UsuarioService usuarioService;
+    private final UsuarioRepository usuarioRepository;
 
     @Autowired
-    public CarritoService(ProductoRepository productoRepository, ClienteRepository clienteRepository,
-            UsuarioService usuarioService) {
+    public CarritoService(ProductoRepository productoRepository,
+            ClienteRepository clienteRepository,
+            UsuarioRepository usuarioRepository) {
         this.productoRepository = productoRepository;
         this.clienteRepository = clienteRepository;
-        this.usuarioService = usuarioService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     /**
      * Método para obtener el clienteId a partir de la autenticación
      */
     private String getClienteId(Authentication auth) {
+        if (auth == null) {
+            logger.error("Error: Authentication es null");
+            throw new RuntimeException("No hay autenticación");
+        }
+
         String username = auth.getName();
         logger.debug("Obteniendo cliente para el usuario: {}", username);
 
-        Optional<Usuario> usuario = usuarioService.findByUsername(username);
-        if (!usuario.isPresent()) {
-            logger.error("Usuario no encontrado: {}", username);
-            throw new RuntimeException("Usuario no encontrado");
-        }
+        // Buscar usuario por username
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    logger.error("Usuario no encontrado en la base de datos: {}", username);
+                    return new RuntimeException("Usuario no encontrado: " + username);
+                });
 
-        logger.debug("Usuario encontrado con ID: {}", usuario.get().getId());
+        logger.debug("Usuario encontrado con ID: {}", usuario.getId());
 
-        Optional<Cliente> cliente = clienteRepository.findByUsuarioId(usuario.get().getId());
-        if (!cliente.isPresent()) {
-            logger.error("Cliente no encontrado para el usuario: {}", username);
-            throw new RuntimeException("Cliente no encontrado para este usuario");
-        }
+        // Buscar cliente asociado al usuario
+        Cliente cliente = clienteRepository.findByUsuarioId(usuario.getId())
+                .orElseThrow(() -> {
+                    logger.error("Cliente no encontrado para usuario con ID {}", usuario.getId());
+                    return new RuntimeException("Cliente no encontrado para el usuario " + username);
+                });
 
-        logger.debug("Cliente encontrado con ID: {}", cliente.get().getId());
-        return cliente.get().getId();
+        logger.debug("Cliente encontrado con ID: {}", cliente.getId());
+        return cliente.getId();
     }
 
     /**
