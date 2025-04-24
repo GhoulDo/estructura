@@ -15,6 +15,5 @@ public class CheckoutResumenDTO {
     private BigDecimal total;
     private String clienteNombre;
     private String clienteEmail;
-    private String direccionEntrega;
     private boolean stockDisponible;
 }
