@@ -1,6 +1,10 @@
 package com.peluqueria.estructura.controller;
 
 import com.peluqueria.estructura.entity.Carrito;
+import com.peluqueria.estructura.entity.Cliente;
+import com.peluqueria.estructura.entity.Usuario;
+import com.peluqueria.estructura.repository.ClienteRepository;
+import com.peluqueria.estructura.repository.UsuarioRepository;
 import com.peluqueria.estructura.service.CarritoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +15,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,10 +26,15 @@ public class CarritoController {
 
     private static final Logger logger = LoggerFactory.getLogger(CarritoController.class);
     private final CarritoService carritoService;
+    private final UsuarioRepository usuarioRepository;
+    private final ClienteRepository clienteRepository;
 
     @Autowired
-    public CarritoController(CarritoService carritoService) {
+    public CarritoController(CarritoService carritoService, UsuarioRepository usuarioRepository,
+            ClienteRepository clienteRepository) {
         this.carritoService = carritoService;
+        this.usuarioRepository = usuarioRepository;
+        this.clienteRepository = clienteRepository;
     }
 
     /**
@@ -185,6 +196,58 @@ public class CarritoController {
         } catch (Exception e) {
             diagnostico.put("error", "Error al procesar diagnóstico: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(diagnostico);
+        }
+    }
+
+    /**
+     * Endpoint de diagnóstico para verificar los datos de autenticación y usuario
+     */
+    @GetMapping("/debug")
+    public ResponseEntity<?> diagnosticar(Authentication auth) {
+        Map<String, Object> info = new HashMap<>();
+
+        try {
+            // Información de autenticación
+            info.put("auth_name", auth.getName());
+            info.put("auth_principal", auth.getPrincipal());
+            info.put("auth_authorities", auth.getAuthorities());
+
+            // Obtener todos los usuarios
+            List<Usuario> usuarios = usuarioRepository.findAll();
+            List<Map<String, Object>> usuariosInfo = new ArrayList<>();
+
+            for (Usuario u : usuarios) {
+                Map<String, Object> usuarioInfo = new HashMap<>();
+                usuarioInfo.put("id", u.getId());
+                usuarioInfo.put("username", u.getUsername());
+                // En lugar de llamar a getRoles(), que parece no existir, podemos usar otro
+                // enfoque
+                usuariosInfo.add(usuarioInfo);
+            }
+
+            info.put("usuarios_en_db", usuariosInfo);
+
+            // Obtener todos los clientes
+            List<Cliente> clientes = clienteRepository.findAll();
+            List<Map<String, Object>> clientesInfo = new ArrayList<>();
+
+            for (Cliente c : clientes) {
+                Map<String, Object> clienteInfo = new HashMap<>();
+                clienteInfo.put("id", c.getId());
+                clienteInfo.put("nombre", c.getNombre());
+                clienteInfo.put("usuario_id", c.getUsuario() != null ? c.getUsuario().getId() : null);
+                clienteInfo.put("usuario_username", c.getUsuario() != null ? c.getUsuario().getUsername() : null);
+                clientesInfo.add(clienteInfo);
+            }
+
+            info.put("clientes_en_db", clientesInfo);
+
+            return ResponseEntity.ok(info);
+
+        } catch (Exception e) {
+            logger.error("Error en diagnóstico: {}", e.getMessage(), e);
+            info.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(info);
         }
     }
 }

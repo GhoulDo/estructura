@@ -15,8 +15,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class CarritoService {
@@ -48,24 +48,62 @@ public class CarritoService {
         String username = auth.getName();
         logger.debug("Obteniendo cliente para el usuario: {}", username);
 
-        // Buscar usuario por username
-        Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    logger.error("Usuario no encontrado en la base de datos: {}", username);
-                    return new RuntimeException("Usuario no encontrado: " + username);
-                });
+        try {
+            // Intento buscar directamente el cliente por username sin pasar por Usuario
+            List<Cliente> clientes = clienteRepository.findAll();
 
-        logger.debug("Usuario encontrado con ID: {}", usuario.getId());
+            for (Cliente cliente : clientes) {
+                if (cliente.getUsuario() != null && username.equalsIgnoreCase(cliente.getUsuario().getUsername())) {
+                    logger.info("Cliente encontrado directamente por username: {} con ID: {}",
+                            cliente.getNombre(), cliente.getId());
+                    return cliente.getId();
+                }
+            }
 
-        // Buscar cliente asociado al usuario
-        Cliente cliente = clienteRepository.findByUsuarioId(usuario.getId())
-                .orElseThrow(() -> {
-                    logger.error("Cliente no encontrado para usuario con ID {}", usuario.getId());
-                    return new RuntimeException("Cliente no encontrado para el usuario " + username);
-                });
+            // Si no se encontró buscando directamente, intentamos el flujo normal
+            Usuario usuario = null;
 
-        logger.debug("Cliente encontrado con ID: {}", cliente.getId());
-        return cliente.getId();
+            // Obtener todos los usuarios para diagnosticar
+            List<Usuario> usuarios = usuarioRepository.findAll();
+            logger.debug("Total de usuarios en la base de datos: {}", usuarios.size());
+
+            for (Usuario u : usuarios) {
+                logger.debug("Usuario en DB: id={}, username={}", u.getId(), u.getUsername());
+                if (username.equalsIgnoreCase(u.getUsername())) {
+                    usuario = u;
+                    break;
+                }
+            }
+
+            if (usuario == null) {
+                logger.error("Usuario no encontrado después de revisar todos los usuarios: {}", username);
+                throw new RuntimeException(
+                        "Usuario no encontrado después de buscar en toda la base de datos: " + username);
+            }
+
+            logger.info("Usuario encontrado manualmente: ID={}, username={}", usuario.getId(), usuario.getUsername());
+
+            // Buscar cliente asociado al usuario encontrado
+            Cliente clienteEncontrado = null;
+            for (Cliente c : clientes) {
+                if (c.getUsuario() != null && c.getUsuario().getId().equals(usuario.getId())) {
+                    clienteEncontrado = c;
+                    break;
+                }
+            }
+
+            if (clienteEncontrado == null) {
+                logger.error("Cliente no encontrado para el usuario con ID: {}", usuario.getId());
+                throw new RuntimeException("Cliente no encontrado para el usuario: " + username);
+            }
+
+            logger.info("Cliente encontrado: {} con ID: {}", clienteEncontrado.getNombre(), clienteEncontrado.getId());
+            return clienteEncontrado.getId();
+
+        } catch (Exception e) {
+            logger.error("Error al buscar cliente para el usuario {}: {}", username, e.getMessage(), e);
+            throw new RuntimeException("Error al buscar cliente: " + e.getMessage());
+        }
     }
 
     /**
