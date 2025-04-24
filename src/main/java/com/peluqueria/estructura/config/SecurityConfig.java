@@ -84,6 +84,8 @@ public class SecurityConfig {
 
                         // Carrito de compras (nueva funcionalidad)
                         .requestMatchers("/api/carrito/**").hasRole("CLIENTE")
+                        .requestMatchers(HttpMethod.GET, "/api/carrito/checkout/resumen").hasRole("CLIENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/carrito/checkout/confirmar").hasRole("CLIENTE")
 
                         // Facturas (principal)
                         .requestMatchers(HttpMethod.GET, "/api/facturas").hasAnyRole("ADMIN", "CLIENTE") // Ver facturas
@@ -100,6 +102,7 @@ public class SecurityConfig {
                                                                                               // (solo admin)
                         .requestMatchers(HttpMethod.DELETE, "/api/facturas/**").hasRole("ADMIN") // Eliminar factura
                                                                                                  // (solo admin)
+                        .requestMatchers(HttpMethod.GET, "/api/facturas/cliente/**").hasAnyRole("ADMIN", "CLIENTE")
 
                         // Detalles de factura
                         .requestMatchers(HttpMethod.GET, "/api/facturas/**/detalles").hasAnyRole("ADMIN", "CLIENTE") // Ver
