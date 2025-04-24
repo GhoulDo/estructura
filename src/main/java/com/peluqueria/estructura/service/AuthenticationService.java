@@ -129,7 +129,6 @@ public class AuthenticationService {
                 cliente.setEmail(request.getEmail());
                 cliente.setTelefono("");
                 cliente.setDireccion("");
-                cliente.setMascotas(null);
 
                 clienteRepository.save(cliente);
             }
