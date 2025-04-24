@@ -26,19 +26,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.Optional;
 
 @Service
 public class CheckoutService {
 
     private static final Logger logger = LoggerFactory.getLogger(CheckoutService.class);
+
     private final CarritoService carritoService;
     private final FacturaService facturaService;
     private final ProductoRepository productoRepository;
     private final ClienteRepository clienteRepository;
     private final UsuarioRepository usuarioRepository;
-    private final InventarioFacturaService inventarioFacturaService;
-    private final CalculadoraFacturaService calculadoraFacturaService;
+    private final ClienteService clienteService;
 
     @Autowired
     public CheckoutService(
@@ -47,15 +46,14 @@ public class CheckoutService {
             ProductoRepository productoRepository,
             ClienteRepository clienteRepository,
             UsuarioRepository usuarioRepository,
-            InventarioFacturaService inventarioFacturaService,
-            CalculadoraFacturaService calculadoraFacturaService) {
+            ClienteService clienteService) {
         this.carritoService = carritoService;
         this.facturaService = facturaService;
         this.productoRepository = productoRepository;
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
-        this.inventarioFacturaService = inventarioFacturaService;
-        this.calculadoraFacturaService = calculadoraFacturaService;
+        this.clienteService = clienteService;
+        logger.info("CheckoutService inicializado correctamente");
     }
 
     /**
@@ -67,6 +65,8 @@ public class CheckoutService {
         try {
             // Obtener el carrito del usuario
             Carrito carrito = carritoService.getCarrito(auth);
+            logger.debug("Carrito obtenido para usuario {}: {} items", auth.getName(),
+                    carrito.getItems() != null ? carrito.getItems().size() : 0);
 
             // Verificar que el carrito no esté vacío
             if (carrito.getItems() == null || carrito.getItems().isEmpty()) {
@@ -74,9 +74,13 @@ public class CheckoutService {
                 throw new ValidationException("El carrito está vacío");
             }
 
-            // Buscar el cliente asociado al usuario
+            // Buscar cliente por username
             Cliente cliente = encontrarClientePorUsername(auth.getName());
-            logger.debug("Cliente encontrado para checkout: ID={}, Nombre={}", cliente.getId(), cliente.getNombre());
+            if (cliente == null) {
+                logger.error("Cliente no encontrado para el usuario: {}", auth.getName());
+                throw new ResourceNotFoundException("Cliente", "usuario", auth.getName());
+            }
+            logger.debug("Cliente encontrado: {}, ID: {}", cliente.getNombre(), cliente.getId());
 
             // Crear el resumen de checkout
             CheckoutResumenDTO resumen = new CheckoutResumenDTO();
@@ -92,7 +96,10 @@ public class CheckoutService {
 
             for (var item : carrito.getItems()) {
                 Producto producto = productoRepository.findById(item.getProductoId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Producto", "id", item.getProductoId()));
+                        .orElseThrow(() -> {
+                            logger.error("Producto no encontrado: {}", item.getProductoId());
+                            return new ResourceNotFoundException("Producto", "id", item.getProductoId());
+                        });
 
                 if (producto.getStock() < item.getCantidad()) {
                     stockDisponible = false;
@@ -109,24 +116,18 @@ public class CheckoutService {
                 }
             }
 
-            if (!stockDisponible) {
-                // No lanzamos excepción, solo indicamos en el resumen que no hay stock
-                // suficiente
-                logger.warn("Stock insuficiente detectado: {}", mensajeError);
-            }
-
             resumen.setStockDisponible(stockDisponible);
-            logger.info("Resumen de checkout generado con éxito para usuario: {}", auth.getName());
+            logger.info("Resumen de checkout generado para {}: stock disponible: {}",
+                    auth.getName(), stockDisponible);
 
             return resumen;
 
         } catch (ResourceNotFoundException | ValidationException e) {
-            // Propagamos estas excepciones para que sean manejadas por el ExceptionHandler
-            logger.error("Error al obtener resumen: {}", e.getMessage());
+            logger.error("Error específico al obtener resumen: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            logger.error("Error inesperado al obtener resumen de checkout: {}", e.getMessage(), e);
-            throw new RuntimeException("Error al obtener resumen de checkout: " + e.getMessage());
+            logger.error("Error inesperado al obtener resumen: {}", e.getMessage(), e);
+            throw new RuntimeException("Error al obtener el resumen de checkout: " + e.getMessage(), e);
         }
     }
 
@@ -147,18 +148,24 @@ public class CheckoutService {
                 throw new ValidationException("El carrito está vacío");
             }
 
-            // Buscar el cliente asociado al usuario
+            // Buscar cliente por username
             Cliente cliente = encontrarClientePorUsername(auth.getName());
-            logger.debug("Cliente encontrado para checkout: ID={}, Nombre={}", cliente.getId(), cliente.getNombre());
+            if (cliente == null) {
+                logger.error("Cliente no encontrado para el usuario: {}", auth.getName());
+                throw new ResourceNotFoundException("Cliente", "usuario", auth.getName());
+            }
+            logger.debug("Cliente encontrado: {}, ID: {}", cliente.getNombre(), cliente.getId());
 
             // Verificar stock suficiente para todos los productos
             for (var item : carrito.getItems()) {
                 Producto producto = productoRepository.findById(item.getProductoId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Producto", "id", item.getProductoId()));
+                        .orElseThrow(() -> {
+                            logger.error("Producto no encontrado: {}", item.getProductoId());
+                            return new ResourceNotFoundException("Producto", "id", item.getProductoId());
+                        });
 
                 if (producto.getStock() < item.getCantidad()) {
-                    logger.warn(
-                            "Intento de checkout con stock insuficiente. Producto: {}, Disponible: {}, Solicitado: {}",
+                    logger.warn("Stock insuficiente para producto: {}, disponible: {}, solicitado: {}",
                             producto.getNombre(), producto.getStock(), item.getCantidad());
                     throw new StockInsuficienteException(producto.getNombre(), producto.getStock(), item.getCantidad());
                 }
@@ -188,7 +195,7 @@ public class CheckoutService {
             factura.setDetalles(detalles);
 
             // Calcular totales
-            calculadoraFacturaService.recalcularFactura(factura);
+            factura.setTotal(carrito.getTotal());
 
             // Guardar la factura
             Factura facturaGuardada = facturaService.save(factura);
@@ -196,21 +203,7 @@ public class CheckoutService {
                     facturaGuardada.getId(), facturaGuardada.getTotal(), cliente.getNombre());
 
             // Actualizar el inventario
-            try {
-                for (DetalleFactura detalle : detalles) {
-                    Producto producto = productoRepository.findById(detalle.getProductoId())
-                            .orElseThrow(
-                                    () -> new ResourceNotFoundException("Producto", "id", detalle.getProductoId()));
-
-                    producto.setStock(producto.getStock() - detalle.getCantidad());
-                    productoRepository.save(producto);
-                    logger.debug("Stock actualizado para producto: {}, nuevo stock: {}",
-                            producto.getNombre(), producto.getStock());
-                }
-            } catch (Exception e) {
-                logger.error("Error al actualizar inventario: {}", e.getMessage(), e);
-                throw new RuntimeException("Error al actualizar el inventario: " + e.getMessage());
-            }
+            actualizarInventario(detalles);
 
             // Vaciar el carrito
             carritoService.vaciarCarrito(auth);
@@ -220,12 +213,32 @@ public class CheckoutService {
             return facturaGuardada;
 
         } catch (ResourceNotFoundException | ValidationException | StockInsuficienteException e) {
-            // Propagamos estas excepciones para que sean manejadas por el ExceptionHandler
-            logger.error("Error al confirmar checkout: {}", e.getMessage());
+            logger.error("Error específico al confirmar checkout: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
             logger.error("Error inesperado al confirmar checkout: {}", e.getMessage(), e);
-            throw new RuntimeException("Error al confirmar checkout: " + e.getMessage());
+            throw new RuntimeException("Error al confirmar checkout: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Actualiza el inventario basado en los detalles de la factura
+     */
+    private void actualizarInventario(List<DetalleFactura> detalles) {
+        logger.debug("Actualizando inventario para {} detalles", detalles.size());
+
+        for (DetalleFactura detalle : detalles) {
+            Producto producto = productoRepository.findById(detalle.getProductoId())
+                    .orElseThrow(() -> {
+                        logger.error("Producto no encontrado al actualizar inventario: {}", detalle.getProductoId());
+                        return new ResourceNotFoundException("Producto", "id", detalle.getProductoId());
+                    });
+
+            int nuevoStock = producto.getStock() - detalle.getCantidad();
+            producto.setStock(nuevoStock);
+            productoRepository.save(producto);
+            logger.debug("Stock actualizado para producto {}: {} -> {}",
+                    producto.getNombre(), producto.getStock() + detalle.getCantidad(), nuevoStock);
         }
     }
 
@@ -235,18 +248,31 @@ public class CheckoutService {
     private Cliente encontrarClientePorUsername(String username) {
         logger.debug("Buscando cliente para el usuario: {}", username);
 
-        // Buscar usuario primero
-        Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    logger.error("Usuario no encontrado con username: {}", username);
-                    return new ResourceNotFoundException("Usuario", "username", username);
-                });
+        try {
+            // Buscar usuario primero
+            Usuario usuario = usuarioRepository.findByUsername(username)
+                    .orElseGet(() -> {
+                        // Si no se encuentra con findByUsername, intentar con findByEmail
+                        logger.debug("Usuario no encontrado con username, intentando con email: {}", username);
+                        return usuarioRepository.findByEmail(username)
+                                .orElseThrow(() -> {
+                                    logger.error("Usuario no encontrado ni por username ni por email: {}", username);
+                                    return new ResourceNotFoundException("Usuario", "username/email", username);
+                                });
+                    });
 
-        // Luego buscar el cliente asociado
-        return clienteRepository.findByUsuarioId(usuario.getId())
-                .orElseThrow(() -> {
-                    logger.error("Cliente no encontrado para el usuario con ID: {}", usuario.getId());
-                    return new ResourceNotFoundException("Cliente", "usuario.id", usuario.getId());
-                });
+            logger.debug("Usuario encontrado: ID={}, Username={}, Email={}",
+                    usuario.getId(), usuario.getUsername(), usuario.getEmail());
+
+            // Buscar el cliente asociado al usuario
+            return clienteRepository.findByUsuarioId(usuario.getId())
+                    .orElseThrow(() -> {
+                        logger.error("Cliente no encontrado para el usuario con ID: {}", usuario.getId());
+                        return new ResourceNotFoundException("Cliente", "usuario.id", usuario.getId());
+                    });
+        } catch (Exception e) {
+            logger.error("Error al buscar cliente por username: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 }

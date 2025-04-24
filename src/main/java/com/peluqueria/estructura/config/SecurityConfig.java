@@ -137,8 +137,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/facturacion-unificada/cliente/**")
                         .hasAnyRole("ADMIN", "CLIENTE") // Ver facturas de cliente (ambos)
 
-                        // Checkout (nueva funcionalidad para clientes)
-                        .requestMatchers("/api/checkout/**").hasRole("CLIENTE")
+                        // Checkout (acceso público para diagnóstico, pero endpoints restringidos)
+                        .requestMatchers(HttpMethod.GET, "/api/checkout/diagnostico").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/checkout/resumen").hasAnyRole("ADMIN", "CLIENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/checkout/confirmar").hasAnyRole("ADMIN", "CLIENTE")
 
                         // Logout protegido
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()

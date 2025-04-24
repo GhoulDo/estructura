@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -34,16 +35,29 @@ public class JwtUtil {
 
     private final ConcurrentHashMap<String, String> tokenBlacklist = new ConcurrentHashMap<>();
 
-    private Key getSignKey() {
+    private Key getSigningKey() {
         try {
-            // Intenta usar decodificación base64 si la clave está en ese formato
-            return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
-        } catch (Exception e) {
+            // Intenta decodificar la clave como Base64
+            byte[] keyBytes = Base64.getDecoder().decode(secret.getBytes(StandardCharsets.UTF_8));
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (IllegalArgumentException e) {
+            // Si falla la decodificación Base64, utiliza los bytes directos
             logger.warn("Error al decodificar la clave secreta como Base64, utilizando bytes directos: {}",
                     e.getMessage());
-            // Si falla, usa los bytes directamente (más seguro para claves con caracteres
-            // especiales)
-            return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+
+            // Convertir la clave a un formato compatible con HMAC-SHA
+            String normalizedSecret = secret;
+            // Asegurarse de que la clave tenga al menos 32 bytes (256 bits) para
+            // HMAC-SHA256
+            while (normalizedSecret.getBytes(StandardCharsets.UTF_8).length < 32) {
+                normalizedSecret += normalizedSecret;
+            }
+            // Truncar si es demasiado largo
+            if (normalizedSecret.getBytes(StandardCharsets.UTF_8).length > 64) {
+                normalizedSecret = normalizedSecret.substring(0, 64);
+            }
+
+            return Keys.hmacShaKeyFor(normalizedSecret.getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -73,7 +87,7 @@ public class JwtUtil {
     private Claims extractAllClaims(String token) {
         try {
             return Jwts.parserBuilder()
-                    .setSigningKey(getSignKey())
+                    .setSigningKey(getSigningKey())
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
@@ -123,7 +137,7 @@ public class JwtUtil {
                 .setSubject(subject)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
