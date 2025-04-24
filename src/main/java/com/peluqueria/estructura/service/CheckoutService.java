@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Optional;
 
 @Service
 public class CheckoutService {
@@ -37,7 +38,8 @@ public class CheckoutService {
     private final CalculadoraFacturaService calculadoraFacturaService;
 
     @Autowired
-    public CheckoutService(CarritoService carritoService,
+    public CheckoutService(
+            CarritoService carritoService,
             FacturaService facturaService,
             ProductoRepository productoRepository,
             ClienteRepository clienteRepository,
@@ -72,17 +74,30 @@ public class CheckoutService {
             // Buscar el cliente asociado al usuario
             String username = auth.getName();
 
-            Usuario usuario = usuarioRepository.findByUsername(username)
-                    .orElseThrow(() -> {
-                        logger.error("Usuario no encontrado: {}", username);
-                        return new RuntimeException("Usuario no encontrado");
-                    });
+            // Intentamos obtener el usuario directamente por username
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByUsername(username);
+            if (!usuarioOpt.isPresent()) {
+                // Intentamos con findByUsernameIgnoreCase
+                usuarioOpt = usuarioRepository.findByUsernameIgnoreCase(username);
+            }
 
-            Cliente cliente = clienteRepository.findByUsuarioId(usuario.getId())
-                    .orElseThrow(() -> {
-                        logger.error("Cliente no encontrado para el usuario ID: {}", usuario.getId());
-                        return new RuntimeException("Cliente no encontrado para este usuario");
-                    });
+            if (!usuarioOpt.isPresent()) {
+                logger.error("Usuario no encontrado: {}", username);
+                throw new RuntimeException("Usuario no encontrado");
+            }
+
+            Usuario usuario = usuarioOpt.get();
+            logger.debug("Usuario encontrado: {}, ID: {}", usuario.getUsername(), usuario.getId());
+
+            // Buscar el cliente por usuarioId
+            Optional<Cliente> clienteOpt = clienteRepository.findByUsuarioId(usuario.getId());
+            if (!clienteOpt.isPresent()) {
+                logger.error("Cliente no encontrado para usuario ID: {}", usuario.getId());
+                throw new RuntimeException("Cliente no encontrado para este usuario");
+            }
+
+            Cliente cliente = clienteOpt.get();
+            logger.debug("Cliente encontrado: {}, ID: {}", cliente.getNombre(), cliente.getId());
 
             // Crear el resumen de checkout
             CheckoutResumenDTO resumen = new CheckoutResumenDTO();
@@ -113,7 +128,7 @@ public class CheckoutService {
 
         } catch (Exception e) {
             logger.error("Error al obtener resumen de checkout: {}", e.getMessage(), e);
-            throw e;
+            throw new RuntimeException("Error al obtener resumen de checkout: " + e.getMessage(), e);
         }
     }
 
@@ -137,11 +152,30 @@ public class CheckoutService {
             // Obtener el cliente asociado al usuario
             String username = auth.getName();
 
-            Usuario usuario = usuarioRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            // Intentamos obtener el usuario directamente por username
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByUsername(username);
+            if (!usuarioOpt.isPresent()) {
+                // Intentamos con findByUsernameIgnoreCase
+                usuarioOpt = usuarioRepository.findByUsernameIgnoreCase(username);
+            }
 
-            Cliente cliente = clienteRepository.findByUsuarioId(usuario.getId())
-                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado para este usuario"));
+            if (!usuarioOpt.isPresent()) {
+                logger.error("Usuario no encontrado: {}", username);
+                throw new RuntimeException("Usuario no encontrado");
+            }
+
+            Usuario usuario = usuarioOpt.get();
+            logger.debug("Usuario encontrado: {}, ID: {}", usuario.getUsername(), usuario.getId());
+
+            // Buscar el cliente por usuarioId
+            Optional<Cliente> clienteOpt = clienteRepository.findByUsuarioId(usuario.getId());
+            if (!clienteOpt.isPresent()) {
+                logger.error("Cliente no encontrado para usuario ID: {}", usuario.getId());
+                throw new RuntimeException("Cliente no encontrado para este usuario");
+            }
+
+            Cliente cliente = clienteOpt.get();
+            logger.debug("Cliente encontrado: {}, ID: {}", cliente.getNombre(), cliente.getId());
 
             // Convertir los items del carrito a detalles de factura
             List<DetalleFactura> detalles = new ArrayList<>();
@@ -187,7 +221,7 @@ public class CheckoutService {
 
         } catch (Exception e) {
             logger.error("Error al confirmar checkout: {}", e.getMessage(), e);
-            throw e;
+            throw new RuntimeException("Error al confirmar checkout: " + e.getMessage(), e);
         }
     }
 }

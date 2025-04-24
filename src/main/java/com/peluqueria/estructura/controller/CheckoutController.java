@@ -49,8 +49,10 @@ public class CheckoutController {
      * Endpoint para confirmar el checkout y crear la factura
      */
     @PostMapping("/confirmar")
-    public ResponseEntity<?> confirmarCheckout(Authentication auth,
+    public ResponseEntity<?> confirmarCheckout(
+            Authentication auth,
             @RequestBody(required = false) Map<String, String> checkoutInfo) {
+
         logger.info("POST /api/checkout/confirmar - Usuario: {}", auth.getName());
 
         if (checkoutInfo == null) {
