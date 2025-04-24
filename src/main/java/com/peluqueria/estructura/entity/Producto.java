@@ -18,5 +18,6 @@ public class Producto {
     private String tipo;
     private BigDecimal precio;
     private int stock;
+    private String descripcion;
+    private String estado;
 }
-

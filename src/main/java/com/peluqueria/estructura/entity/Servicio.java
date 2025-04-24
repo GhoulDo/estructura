@@ -17,6 +17,6 @@ public class Servicio {
     private String nombre;
     private int duracion;
     private BigDecimal precio;
+    private String descripcion;
+    private String estado;
 }
-
-

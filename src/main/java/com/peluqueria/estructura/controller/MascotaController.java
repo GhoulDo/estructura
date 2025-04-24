@@ -57,9 +57,10 @@ public class MascotaController {
         StringBuilder url = new StringBuilder();
         url.append(scheme).append("://").append(serverName);
 
-        // Añadir el puerto solo si no es el puerto por defecto (80 para HTTP, 443 para HTTPS)
+        // Añadir el puerto solo si no es el puerto por defecto (80 para HTTP, 443 para
+        // HTTPS)
         if ((serverPort != 80 && "http".equals(scheme)) ||
-            (serverPort != 443 && "https".equals(scheme))) {
+                (serverPort != 443 && "https".equals(scheme))) {
             url.append(":").append(serverPort);
         }
 
@@ -122,7 +123,8 @@ public class MascotaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Mascota> getMascotaById(@PathVariable String id, Authentication authentication, HttpServletRequest request) {
+    public ResponseEntity<Mascota> getMascotaById(@PathVariable String id, Authentication authentication,
+            HttpServletRequest request) {
         logger.info("Petición recibida para obtener la mascota con ID: {} del usuario: {}", id,
                 authentication.getName());
         Optional<Mascota> mascotaOpt = mascotaService.findByIdAndClienteUsuarioUsername(id, authentication.getName());

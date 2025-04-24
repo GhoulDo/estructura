@@ -1,0 +1,979 @@
+# DOCUMENTACIÓN DE RUTAS API - PELUQUERÍA CANINA
+
+## Índice
+1. [Servicios](#servicios)
+2. [Citas](#citas)
+3. [Facturas](#facturas)
+4. [Detalle de Facturas](#detalle-de-facturas)
+5. [Productos](#productos)
+6. [Facturación Unificada](#facturacion-unificada)
+
+---
+
+<a name="servicios"></a>
+## 1. SERVICIOS
+
+### GET /api/servicios
+Obtiene todos los servicios disponibles.
+
+**Respuesta (200 OK):**
+```json
+[
+  {
+    "id": "6432a7b2c12d8f3e4a5b6c7d",
+    "nombre": "Corte de pelo",
+    "duracion": 60,
+    "precio": 25.99
+  },
+  {
+    "id": "6432a7b2c12d8f3e4a5b6c7e",
+    "nombre": "Baño completo",
+    "duracion": 45,
+    "precio": 19.99
+  }
+]
+```
+
+### GET /api/servicios/{id}
+Obtiene un servicio por su ID.
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6c7d",
+  "nombre": "Corte de pelo",
+  "duracion": 60,
+  "precio": 25.99
+}
+```
+
+### POST /api/servicios
+Crea un nuevo servicio.
+
+**Petición:**
+```json
+{
+  "nombre": "Cepillado dental",
+  "duracion": 30,
+  "precio": 15.50
+}
+```
+
+**Respuesta (201 Created):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6c7f",
+  "nombre": "Cepillado dental",
+  "duracion": 30,
+  "precio": 15.50
+}
+```
+
+### PUT /api/servicios/{id}
+Actualiza un servicio existente.
+
+**Petición:**
+```json
+{
+  "nombre": "Corte de pelo premium",
+  "duracion": 75,
+  "precio": 29.99
+}
+```
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6c7d",
+  "nombre": "Corte de pelo premium",
+  "duracion": 75,
+  "precio": 29.99
+}
+```
+
+### PATCH /api/servicios/{id}
+Actualiza parcialmente un servicio existente.
+
+**Petición:**
+```json
+{
+  "precio": 27.99
+}
+```
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6c7d",
+  "nombre": "Corte de pelo premium",
+  "duracion": 75,
+  "precio": 27.99
+}
+```
+
+### DELETE /api/servicios/{id}
+Elimina un servicio.
+
+**Respuesta (204 No Content)**
+(Sin cuerpo en la respuesta)
+
+---
+
+<a name="citas"></a>
+## 2. CITAS
+
+### GET /api/citas
+Obtiene todas las citas con posibilidad de filtrado.
+
+**Parámetros de consulta opcionales:**
+- estado: Estado de la cita (PENDIENTE, COMPLETADA, CANCELADA)
+- mascotaId: ID de la mascota
+- servicioId: ID del servicio
+- fechaDesde: Fecha desde (formato ISO: YYYY-MM-DD)
+- fechaHasta: Fecha hasta (formato ISO: YYYY-MM-DD)
+- ordenarPor: Campo por el cual ordenar (default: fecha)
+- direccion: Dirección de ordenamiento (asc, desc)
+
+**Respuesta (200 OK):**
+```json
+[
+  {
+    "id": "6432a7b2c12d8f3e4a5b6c8a",
+    "mascota": {
+      "id": "6432a7b2c12d8f3e4a5b6c9a",
+      "nombre": "Max",
+      "raza": "Bulldog",
+      "cliente": {
+        "id": "6432a7b2c12d8f3e4a5b6d0a",
+        "nombre": "Juan Pérez"
+      }
+    },
+    "servicio": {
+      "id": "6432a7b2c12d8f3e4a5b6c7d",
+      "nombre": "Corte de pelo premium"
+    },
+    "fecha": "2023-08-25",
+    "hora": "10:00:00",
+    "estado": "PENDIENTE",
+    "facturada": false,
+    "facturaId": null
+  }
+]
+```
+
+### GET /api/citas/organizadas
+Obtiene todas las citas organizadas por fecha.
+
+**Respuesta (200 OK):**
+```json
+{
+  "2023-08-25": [
+    {
+      "id": "6432a7b2c12d8f3e4a5b6c8a",
+      "mascota": {
+        "id": "6432a7b2c12d8f3e4a5b6c9a",
+        "nombre": "Max",
+        "raza": "Bulldog"
+      },
+      "servicio": {
+        "id": "6432a7b2c12d8f3e4a5b6c7d",
+        "nombre": "Corte de pelo premium"
+      },
+      "fecha": "2023-08-25",
+      "hora": "10:00:00",
+      "estado": "PENDIENTE"
+    },
+    {
+      "id": "6432a7b2c12d8f3e4a5b6c8b",
+      "mascota": {
+        "id": "6432a7b2c12d8f3e4a5b6c9b",
+        "nombre": "Luna",
+        "raza": "Poodle"
+      },
+      "servicio": {
+        "id": "6432a7b2c12d8f3e4a5b6c7e",
+        "nombre": "Baño completo"
+      },
+      "fecha": "2023-08-25",
+      "hora": "16:00:00",
+      "estado": "PENDIENTE"
+    }
+  ],
+  "2023-08-26": [
+    {
+      "id": "6432a7b2c12d8f3e4a5b6c8c",
+      "mascota": {
+        "id": "6432a7b2c12d8f3e4a5b6c9c",
+        "nombre": "Rocky",
+        "raza": "Labrador"
+      },
+      "servicio": {
+        "id": "6432a7b2c12d8f3e4a5b6c7f",
+        "nombre": "Cepillado dental"
+      },
+      "fecha": "2023-08-26",
+      "hora": "11:30:00",
+      "estado": "PENDIENTIENTE"
+    }
+  ]
+}
+```
+
+### GET /api/citas/{id}
+Obtiene una cita específica por su ID.
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6c8a",
+  "mascota": {
+    "id": "6432a7b2c12d8f3e4a5b6c9a",
+    "nombre": "Max",
+    "raza": "Bulldog",
+    "cliente": {
+      "id": "6432a7b2c12d8f3e4a5b6d0a",
+      "nombre": "Juan Pérez"
+    }
+  },
+  "servicio": {
+    "id": "6432a7b2c12d8f3e4a5b6c7d",
+    "nombre": "Corte de pelo premium"
+  },
+  "fecha": "2023-08-25",
+  "hora": "10:00:00",
+  "estado": "PENDIENTE",
+  "facturada": false,
+  "facturaId": null
+}
+```
+
+### GET /api/citas/mascota/{mascotaId}
+Obtiene todas las citas de una mascota específica.
+
+**Respuesta (200 OK):**
+```json
+[
+  {
+    "id": "6432a7b2c12d8f3e4a5b6c8a",
+    "mascota": {
+      "id": "6432a7b2c12d8f3e4a5b6c9a",
+      "nombre": "Max",
+      "raza": "Bulldog"
+    },
+    "servicio": {
+      "id": "6432a7b2c12d8f3e4a5b6c7d",
+      "nombre": "Corte de pelo premium"
+    },
+    "fecha": "2023-08-25",
+    "hora": "10:00:00",
+    "estado": "PENDIENTE",
+    "facturada": false
+  },
+  {
+    "id": "6432a7b2c12d8f3e4a5b6c8d",
+    "mascota": {
+      "id": "6432a7b2c12d8f3e4a5b6c9a",
+      "nombre": "Max",
+      "raza": "Bulldog"
+    },
+    "servicio": {
+      "id": "6432a7b2c12d8f3e4a5b6c7e",
+      "nombre": "Baño completo"
+    },
+    "fecha": "2023-09-10",
+    "hora": "15:00:00",
+    "estado": "PENDIENTE",
+    "facturada": false
+  }
+]
+```
+
+### GET /api/citas/fecha/{fecha}
+Obtiene todas las citas de una fecha específica.
+
+**Respuesta (200 OK):**
+```json
+[
+  {
+    "id": "6432a7b2c12d8f3e4a5b6c8a",
+    "mascota": {
+      "id": "6432a7b2c12d8f3e4a5b6c9a",
+      "nombre": "Max",
+      "raza": "Bulldog"
+    },
+    "servicio": {
+      "id": "6432a7b2c12d8f3e4a5b6c7d",
+      "nombre": "Corte de pelo premium"
+    },
+    "fecha": "2023-08-25",
+    "hora": "10:00:00",
+    "estado": "PENDIENTE"
+  },
+  {
+    "id": "6432a7b2c12d8f3e4a5b6c8b",
+    "mascota": {
+      "id": "6432a7b2c12d8f3e4a5b6c9b",
+      "nombre": "Luna",
+      "raza": "Poodle"
+    },
+    "servicio": {
+      "id": "6432a7b2c12d8f3e4a5b6c7e",
+      "nombre": "Baño completo"
+    },
+    "fecha": "2023-08-25",
+    "hora": "16:00:00",
+    "estado": "PENDIENTE"
+  }
+]
+```
+
+### POST /api/citas
+Crea una nueva cita.
+
+**Petición:**
+```json
+{
+  "mascota": {
+    "id": "6432a7b2c12d8f3e4a5b6c9a"
+  },
+  "servicio": {
+    "id": "6432a7b2c12d8f3e4a5b6c7d"
+  },
+  "fecha": "2023-09-15",
+  "hora": "14:30:00",
+  "estado": "PENDIENTE"
+}
+```
+
+**Respuesta (201 Created):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6c8e",
+  "mascota": {
+    "id": "6432a7b2c12d8f3e4a5b6c9a",
+    "nombre": "Max",
+    "raza": "Bulldog"
+  },
+  "servicio": {
+    "id": "6432a7b2c12d8f3e4a5b6c7d",
+    "nombre": "Corte de pelo premium"
+  },
+  "fecha": "2023-09-15",
+  "hora": "14:30:00",
+  "estado": "PENDIENTE",
+  "facturada": false,
+  "facturaId": null
+}
+```
+
+### PUT /api/citas/{id}
+Actualiza una cita existente.
+
+**Petición:**
+```json
+{
+  "mascota": {
+    "id": "6432a7b2c12d8f3e4a5b6c9a"
+  },
+  "servicio": {
+    "id": "6432a7b2c12d8f3e4a5b6c7e"
+  },
+  "fecha": "2023-09-16",
+  "hora": "15:30:00",
+  "estado": "PENDIENTE"
+}
+```
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6c8e",
+  "mascota": {
+    "id": "6432a7b2c12d8f3e4a5b6c9a",
+    "nombre": "Max",
+    "raza": "Bulldog"
+  },
+  "servicio": {
+    "id": "6432a7b2c12d8f3e4a5b6c7e",
+    "nombre": "Baño completo"
+  },
+  "fecha": "2023-09-16",
+  "hora": "15:30:00",
+  "estado": "PENDIENTE",
+  "facturada": false,
+  "facturaId": null
+}
+```
+
+### DELETE /api/citas/{id}
+Elimina una cita.
+
+**Respuesta (204 No Content)**
+(Sin cuerpo en la respuesta)
+
+---
+
+<a name="facturas"></a>
+## 3. FACTURAS
+
+### GET /api/facturas
+Obtiene todas las facturas (si el usuario es ADMIN) o solo las facturas del cliente autenticado (si el usuario es CLIENTE).
+
+**Respuesta (200 OK) para ADMIN:**
+```json
+[
+  {
+    "id": "6432a7b2c12d8f3e4a5b6d1a",
+    "cliente": {
+      "id": "6432a7b2c12d8f3e4a5b6d0a",
+      "nombre": "Juan Pérez",
+      "apellido": "Gómez",
+      "telefono": "555-123-4567",
+      "email": "juan@example.com"
+    },
+    "fecha": "2023-08-25T14:30:00",
+    "total": 45.98,
+    "estado": "PAGADA",
+    "detalles": [
+      {
+        "id": "6432a7b2c12d8f3e4a5b6e1a",
+        "servicioId": "6432a7b2c12d8f3e4a5b6c7d",
+        "servicioNombre": "Corte de pelo premium",
+        "cantidad": 1,
+        "precioUnitario": 27.99,
+        "subtotal": 27.99
+      },
+      {
+        "id": "6432a7b2c12d8f3e4a5b6e1b",
+        "productoId": "6432a7b2c12d8f3e4a5b6f1a",
+        "productoNombre": "Champú antipulgas",
+        "cantidad": 1,
+        "precioUnitario": 17.99,
+        "subtotal": 17.99
+      }
+    ]
+  },
+  {
+    "id": "6432a7b2c12d8f3e4a5b6d1b",
+    "cliente": {
+      "id": "6432a7b2c12d8f3e4a5b6d0b",
+      "nombre": "María Rodríguez",
+      "apellido": "López",
+      "telefono": "555-987-6543",
+      "email": "maria@example.com"
+    },
+    "fecha": "2023-08-26T11:45:00",
+    "total": 19.99,
+    "estado": "PENDIENTE",
+    "detalles": [
+      {
+        "id": "6432a7b2c12d8f3e4a5b6e1c",
+        "servicioId": "6432a7b2c12d8f3e4a5b6c7e",
+        "servicioNombre": "Baño completo",
+        "cantidad": 1,
+        "precioUnitario": 19.99,
+        "subtotal": 19.99
+      }
+    ]
+  }
+]
+```
+
+### GET /api/facturas/{id}
+Obtiene una factura específica por su ID.
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6d1a",
+  "cliente": {
+    "id": "6432a7b2c12d8f3e4a5b6d0a",
+    "nombre": "Juan Pérez",
+    "apellido": "Gómez",
+    "telefono": "555-123-4567",
+    "email": "juan@example.com"
+  },
+  "fecha": "2023-08-25T14:30:00",
+  "total": 45.98,
+  "estado": "PAGADA",
+  "detalles": [
+    {
+      "id": "6432a7b2c12d8f3e4a5b6e1a",
+      "servicioId": "6432a7b2c12d8f3e4a5b6c7d",
+      "servicioNombre": "Corte de pelo premium",
+      "cantidad": 1,
+      "precioUnitario": 27.99,
+      "subtotal": 27.99
+    },
+    {
+      "id": "6432a7b2c12d8f3e4a5b6e1b",
+      "productoId": "6432a7b2c12d8f3e4a5b6f1a",
+      "productoNombre": "Champú antipulgas",
+      "cantidad": 1,
+      "precioUnitario": 17.99,
+      "subtotal": 17.99
+    }
+  ]
+}
+```
+
+### POST /api/facturas
+Crea una nueva factura.
+
+**Petición:**
+```json
+{
+  "cliente": {
+    "id": "6432a7b2c12d8f3e4a5b6d0a"
+  },
+  "fecha": "2023-08-27T16:00:00",
+  "estado": "PENDIENTE",
+  "detalles": [
+    {
+      "servicioId": "6432a7b2c12d8f3e4a5b6c7d",
+      "cantidad": 1
+    }
+  ]
+}
+```
+
+**Respuesta (201 Created):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6d1c",
+  "cliente": {
+    "id": "6432a7b2c12d8f3e4a5b6d0a",
+    "nombre": "Juan Pérez",
+    "apellido": "Gómez",
+    "telefono": "555-123-4567",
+    "email": "juan@example.com"
+  },
+  "fecha": "2023-08-27T16:00:00",
+  "total": 27.99,
+  "estado": "PENDIENTE",
+  "detalles": [
+    {
+      "id": "6432a7b2c12d8f3e4a5b6e1d",
+      "servicioId": "6432a7b2c12d8f3e4a5b6c7d",
+      "servicioNombre": "Corte de pelo premium",
+      "cantidad": 1,
+      "precioUnitario": 27.99,
+      "subtotal": 27.99
+    }
+  ]
+}
+```
+
+### GET /api/facturas/{id}/total
+Obtiene el total de una factura.
+
+**Respuesta (200 OK):**
+```json
+27.99
+```
+
+---
+
+<a name="detalle-de-facturas"></a>
+## 4. DETALLE DE FACTURAS
+
+### GET /api/facturas/{facturaId}/detalles
+Obtiene todos los detalles de una factura específica.
+
+**Respuesta (200 OK):**
+```json
+[
+  {
+    "id": "6432a7b2c12d8f3e4a5b6e1a",
+    "productoId": null,
+    "servicioId": "6432a7b2c12d8f3e4a5b6c7d",
+    "cantidad": 1,
+    "subtotal": 27.99
+  },
+  {
+    "id": "6432a7b2c12d8f3e4a5b6e1b",
+    "productoId": "6432a7b2c12d8f3e4a5b6f1a",
+    "servicioId": null,
+    "cantidad": 1,
+    "subtotal": 17.99
+  }
+]
+```
+
+### GET /api/facturas/{facturaId}/detalles/{detalleId}
+Obtiene un detalle específico de una factura.
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6e1a",
+  "productoId": null,
+  "servicioId": "6432a7b2c12d8f3e4a5b6c7d",
+  "cantidad": 1,
+  "subtotal": 27.99
+}
+```
+
+### POST /api/facturas/{facturaId}/detalles
+Añade un nuevo detalle a una factura.
+
+**Petición:**
+```json
+{
+  "productoId": "6432a7b2c12d8f3e4a5b6f1b",
+  "cantidad": 2
+}
+```
+
+**Respuesta (201 Created):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6e1e",
+  "productoId": "6432a7b2c12d8f3e4a5b6f1b",
+  "servicioId": null,
+  "cantidad": 2,
+  "subtotal": 29.98
+}
+```
+
+### PUT /api/facturas/{facturaId}/detalles/{detalleId}
+Actualiza un detalle existente de una factura.
+
+**Petición:**
+```json
+{
+  "cantidad": 3
+}
+```
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6e1e",
+  "productoId": "6432a7b2c12d8f3e4a5b6f1b",
+  "servicioId": null,
+  "cantidad": 3,
+  "subtotal": 44.97
+}
+```
+
+### DELETE /api/facturas/{facturaId}/detalles/{detalleId}
+Elimina un detalle de una factura.
+
+**Respuesta (204 No Content)**
+(Sin cuerpo en la respuesta)
+
+---
+
+<a name="productos"></a>
+## 5. PRODUCTOS
+
+### GET /api/productos
+Obtiene todos los productos disponibles.
+
+**Respuesta (200 OK):**
+```json
+[
+  {
+    "id": "6432a7b2c12d8f3e4a5b6f1a",
+    "nombre": "Champú antipulgas",
+    "tipo": "Higiene",
+    "precio": 17.99,
+    "stock": 50
+  },
+  {
+    "id": "6432a7b2c12d8f3e4a5b6f1b",
+    "nombre": "Collar de cuero",
+    "tipo": "Accesorio",
+    "precio": 14.99,
+    "stock": 30
+  }
+]
+```
+
+### GET /api/productos/{id}
+Obtiene un producto específico por su ID.
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6f1a",
+  "nombre": "Champú antipulgas",
+  "tipo": "Higiene",
+  "precio": 17.99,
+  "stock": 50
+}
+```
+
+### POST /api/productos
+Crea un nuevo producto.
+
+**Petición:**
+```json
+{
+  "nombre": "Cepillo para perros",
+  "tipo": "Cuidado",
+  "precio": 12.50,
+  "stock": 25
+}
+```
+
+**Respuesta (201 Created):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6f1c",
+  "nombre": "Cepillo para perros",
+  "tipo": "Cuidado",
+  "precio": 12.50,
+  "stock": 25
+}
+```
+
+### PUT /api/productos/{id}
+Actualiza un producto existente.
+
+**Petición:**
+```json
+{
+  "nombre": "Champú antipulgas premium",
+  "tipo": "Higiene",
+  "precio": 19.99,
+  "stock": 45
+}
+```
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6f1a",
+  "nombre": "Champú antipulgas premium",
+  "tipo": "Higiene",
+  "precio": 19.99,
+  "stock": 45
+}
+```
+
+### DELETE /api/productos/{id}
+Elimina un producto.
+
+**Respuesta (204 No Content)**
+(Sin cuerpo en la respuesta)
+
+---
+
+<a name="facturacion-unificada"></a>
+## 6. FACTURACIÓN UNIFICADA
+
+### POST /api/facturacion-unificada/facturar-cita/{citaId}
+Crea una factura a partir de una cita, permitiendo opcionalmente añadir productos.
+
+**Petición:**
+```json
+{
+  "productosIds": ["6432a7b2c12d8f3e4a5b6f1a", "6432a7b2c12d8f3e4a5b6f1b"],
+  "cantidades": [1, 2]
+}
+```
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6d1d",
+  "cliente": {
+    "id": "6432a7b2c12d8f3e4a5b6d0a",
+    "nombre": "Juan Pérez",
+    "apellido": "Gómez"
+  },
+  "fecha": "2023-08-28T10:15:30",
+  "total": 57.97,
+  "estado": "PENDIENTE",
+  "detalles": [
+    {
+      "id": "6432a7b2c12d8f3e4a5b6e1f",
+      "servicioId": "6432a7b2c12d8f3e4a5b6c7d",
+      "servicioNombre": "Corte de pelo premium",
+      "cantidad": 1,
+      "precioUnitario": 27.99,
+      "subtotal": 27.99
+    },
+    {
+      "id": "6432a7b2c12d8f3e4a5b6e2a",
+      "productoId": "6432a7b2c12d8f3e4a5b6f1a",
+      "productoNombre": "Champú antipulgas",
+      "cantidad": 1,
+      "precioUnitario": 17.99,
+      "subtotal": 17.99
+    },
+    {
+      "id": "6432a7b2c12d8f3e4a5b6e2b",
+      "productoId": "6432a7b2c12d8f3e4a5b6f1b",
+      "productoNombre": "Collar de cuero",
+      "cantidad": 2,
+      "precioUnitario": 14.99,
+      "subtotal": 29.98
+    }
+  ]
+}
+```
+
+### PUT /api/facturacion-unificada/agregar-productos/{facturaId}
+Añade productos a una factura existente.
+
+**Petición:**
+```json
+{
+  "productosIds": ["6432a7b2c12d8f3e4a5b6f1c"],
+  "cantidades": [1]
+}
+```
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6d1d",
+  "cliente": {
+    "id": "6432a7b2c12d8f3e4a5b6d0a",
+    "nombre": "Juan Pérez",
+    "apellido": "Gómez"
+  },
+  "fecha": "2023-08-28T10:15:30",
+  "total": 70.47,
+  "estado": "PENDIENTE",
+  "detalles": [
+    {
+      "id": "6432a7b2c12d8f3e4a5b6e1f",
+      "servicioId": "6432a7b2c12d8f3e4a5b6c7d",
+      "servicioNombre": "Corte de pelo premium",
+      "cantidad": 1,
+      "precioUnitario": 27.99,
+      "subtotal": 27.99
+    },
+    {
+      "id": "6432a7b2c12d8f3e4a5b6e2a",
+      "productoId": "6432a7b2c12d8f3e4a5b6f1a",
+      "productoNombre": "Champú antipulgas",
+      "cantidad": 1,
+      "precioUnitario": 17.99,
+      "subtotal": 17.99
+    },
+    {
+      "id": "6432a7b2c12d8f3e4a5b6e2b",
+      "productoId": "6432a7b2c12d8f3e4a5b6f1b",
+      "productoNombre": "Collar de cuero",
+      "cantidad": 2,
+      "precioUnitario": 14.99,
+      "subtotal": 29.98
+    },
+    {
+      "id": "6432a7b2c12d8f3e4a5b6e2c",
+      "productoId": "6432a7b2c12d8f3e4a5b6f1c",
+      "productoNombre": "Cepillo para perros",
+      "cantidad": 1,
+      "precioUnitario": 12.50,
+      "subtotal": 12.50
+    }
+  ]
+}
+```
+
+### PUT /api/facturacion-unificada/pagar/{facturaId}
+Marca una factura como pagada.
+
+**Respuesta (200 OK):**
+```json
+{
+  "id": "6432a7b2c12d8f3e4a5b6d1d",
+  "cliente": {
+    "id": "6432a7b2c12d8f3e4a5b6d0a",
+    "nombre": "Juan Pérez",
+    "apellido": "Gómez"
+  },
+  "fecha": "2023-08-28T10:15:30",
+  "total": 70.47,
+  "estado": "PAGADA",
+  "detalles": [
+    // detalles omitidos para brevedad
+  ]
+}
+```
+
+### GET /api/facturacion-unificada/cliente/{clienteId}
+Obtiene todas las facturas de un cliente.
+
+**Respuesta (200 OK):**
+```json
+[
+  {
+    "id": "6432a7b2c12d8f3e4a5b6d1a",
+    "cliente": {
+      "id": "6432a7b2c12d8f3e4a5b6d0a",
+      "nombre": "Juan Pérez",
+      "apellido": "Gómez"
+    },
+    "fecha": "2023-08-25T14:30:00",
+    "total": 45.98,
+    "estado": "PAGADA",
+    "detalles": [
+      // detalles omitidos para brevedad
+    ]
+  },
+  {
+    "id": "6432a7b2c12d8f3e4a5b6d1d",
+    "cliente": {
+      "id": "6432a7b2c12d8f3e4a5b6d0a",
+      "nombre": "Juan Pérez",
+      "apellido": "Gómez"
+    },
+    "fecha": "2023-08-28T10:15:30",
+    "total": 70.47,
+    "estado": "PAGADA",
+    "detalles": [
+      // detalles omitidos para brevedad
+    ]
+  }
+]
+```
+
+---
+
+## NOTAS SOBRE LA CARGA DE IMÁGENES
+
+Para visualizar imágenes desde el frontend, se deben usar las siguientes URLs:
+
+1. **Para imágenes de productos**: `/api/imagenes/productos/{id}`
+2. **Para imágenes de mascotas**: `/api/imagenes/mascotas/{id}`
+
+La dirección de API debe configurarse correctamente en el frontend, asegurando que:
+
+1. La URL base incluya el protocolo (http/https) y el servidor correcto
+2. Las rutas específicas de las imágenes estén formadas correctamente
+
+**Ejemplo de implementación en el frontend (Vue.js):**
+```javascript
+// Configuración de la URL base de la API
+const apiUrl = 'https://nombre-del-servidor.com';
+
+// Función para obtener la URL completa de la imagen de un producto
+function getProductoImageUrl(productoId) {
+  return `${apiUrl}/api/imagenes/productos/${productoId}`;
+}
+
+// Ejemplo de uso en un componente
+export default {
+  props: {
+    productoId: String
+  },
+  computed: {
+    imagenUrl() {
+      return getProductoImageUrl(this.productoId);
+    }
+  },
+  template: `<img :src="imagenUrl" alt="Imagen del producto" />`
+}
+```
+
+Si las imágenes no se muestran correctamente, verificar:
+1. Que las rutas estén formadas correctamente
+2. Que el servidor API esté respondiendo adecuadamente
+3. Que no haya problemas de CORS (Cross-Origin Resource Sharing)
+4. Que los ID utilizados sean válidos

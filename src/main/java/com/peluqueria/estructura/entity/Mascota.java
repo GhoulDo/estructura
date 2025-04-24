@@ -30,7 +30,7 @@ public class Mascota {
     @JsonIgnore // Ignorar este campo en la serialización JSON
     @Field
     private byte[] foto; // Campo para almacenar la foto de la mascota en formato binario
-    
+
     @Transient // Campo no persistido en la base de datos
     private String fotoUrl; // URL para acceder a la foto
 

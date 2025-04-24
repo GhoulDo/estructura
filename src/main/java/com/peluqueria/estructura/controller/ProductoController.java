@@ -44,6 +44,35 @@ public class ProductoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PatchMapping("/{id}")
+    public ResponseEntity<Producto> patchProducto(@PathVariable String id, @RequestBody Producto productoActualizado) {
+        return productoService.findById(id)
+                .map(existingProducto -> {
+                    // Actualiza solo los campos no nulos
+                    if (productoActualizado.getNombre() != null) {
+                        existingProducto.setNombre(productoActualizado.getNombre());
+                    }
+                    if (productoActualizado.getTipo() != null) {
+                        existingProducto.setTipo(productoActualizado.getTipo());
+                    }
+                    if (productoActualizado.getPrecio() != null) {
+                        existingProducto.setPrecio(productoActualizado.getPrecio());
+                    }
+                    if (productoActualizado.getStock() > 0) {
+                        existingProducto.setStock(productoActualizado.getStock());
+                    }
+                    if (productoActualizado.getDescripcion() != null) {
+                        existingProducto.setDescripcion(productoActualizado.getDescripcion());
+                    }
+                    if (productoActualizado.getEstado() != null) {
+                        existingProducto.setEstado(productoActualizado.getEstado());
+                    }
+
+                    return ResponseEntity.ok(productoService.save(existingProducto));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProducto(@PathVariable String id) {
         productoService.deleteById(id);
