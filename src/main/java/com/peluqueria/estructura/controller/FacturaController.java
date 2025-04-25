@@ -7,6 +7,7 @@ import com.peluqueria.estructura.entity.Usuario;
 import com.peluqueria.estructura.service.FacturaService;
 import com.peluqueria.estructura.service.UsuarioService;
 import com.peluqueria.estructura.service.ClienteService;
+import com.peluqueria.estructura.repository.FacturaRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,12 +30,14 @@ public class FacturaController {
     private final FacturaService facturaService;
     private final UsuarioService usuarioService;
     private final ClienteService clienteService;
+    private final FacturaRepository facturaRepository;
 
     public FacturaController(FacturaService facturaService, UsuarioService usuarioService,
-            ClienteService clienteService) {
+            ClienteService clienteService, FacturaRepository facturaRepository) {
         this.facturaService = facturaService;
         this.usuarioService = usuarioService;
         this.clienteService = clienteService;
+        this.facturaRepository = facturaRepository;
         logger.info("FacturaController inicializado correctamente");
     }
 
@@ -76,9 +79,20 @@ public class FacturaController {
         logger.debug("Obteniendo facturas para cliente con username: {}", username);
 
         try {
-            // Usar el método más robusto que combina múltiples estrategias de búsqueda
-            List<Factura> facturas = facturaService.findAllFacturasForUser(username);
-            logger.debug("Encontradas {} facturas para el cliente {}", facturas.size(), username);
+            // 1. Primero buscamos el cliente por su username/email
+            Cliente cliente = clienteService.findByUsuarioUsername(username);
+            logger.debug("Cliente encontrado: {} con ID: {}", cliente.getNombre(), cliente.getId());
+
+            // 2. Ahora buscar facturas directamente por el ID del cliente
+            List<Factura> facturas = facturaRepository.findByClienteRef(cliente.getId());
+            logger.debug("Encontradas {} facturas directamente por clienteId", facturas.size());
+
+            // 3. Si no hay resultados, probar con los métodos alternativos
+            if (facturas.isEmpty()) {
+                facturas = facturaService.findAllFacturasForUser(username);
+                logger.debug("Encontradas {} facturas con método alternativo", facturas.size());
+            }
+
             return ResponseEntity.ok(facturas);
         } catch (Exception e) {
             logger.error("Error al buscar facturas del cliente {}: {}", username, e.getMessage(), e);

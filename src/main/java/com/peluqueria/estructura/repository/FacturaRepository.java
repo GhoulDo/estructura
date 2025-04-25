@@ -10,26 +10,35 @@ import java.util.List;
 
 @Repository
 public interface FacturaRepository extends MongoRepository<Factura, String> {
+    // Consulta básica por clienteId directamente (esto funciona con DBRef)
     List<Factura> findByClienteId(String clienteId);
 
     List<Factura> findByFechaBetween(LocalDateTime inicio, LocalDateTime fin);
 
+    // NUEVA CONSULTA: Busca directamente por la referencia a cliente
+    @Query("{'cliente.$id': ?0}")
+    List<Factura> findByClienteRef(String clienteId);
+
+    // NUEVA CONSULTA: Busca facturas por ID, para diagnóstico
+    @Query(value = "{}", fields = "{'id': 1, 'cliente': 1, 'estado': 1}")
+    List<Factura> findAllFacturasResumen();
+
+    // Consultamos directamente el ObjectId de la referencia
+    @Query("{'cliente.$id': ?0}")
+    List<Factura> findByClienteIdRef(String clienteId);
+
+    // Mantén estas consultas pero ajusta el código para usarlas solo cuando
+    // corresponda
     @Query("{'cliente.usuario.username': ?0}")
     List<Factura> findByClienteUsuarioUsername(String username);
 
     @Query("{'cliente.usuario.email': ?0}")
     List<Factura> findByClienteUsuarioEmail(String email);
 
-    // Consulta más robusta que busca por cualquier parte del objeto cliente
     @Query("{$or: [{'cliente.usuario.username': ?0}, {'cliente.usuario.email': ?0}, {'cliente.id': ?0}]}")
     List<Factura> findByClienteIdOrUsername(String idOrUsername);
 
-    // Consulta por ID del cliente si las anteriores fallan
-    @Query("{'cliente.id': ?0}")
-    List<Factura> findByClienteIdDirectly(String clienteId);
-
-    // Buscar todas las facturas creadas por un cliente (identificado por su ID)
-    // independientemente de la estructura
+    // Mantén esta consulta como respaldo para casos complejos
     @Query(value = "{$where: 'function() { " +
             "return (this.cliente && (this.cliente.id == ?0 || " +
             "(this.cliente.usuario && " +

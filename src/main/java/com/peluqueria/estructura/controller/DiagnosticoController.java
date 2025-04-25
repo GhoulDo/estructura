@@ -1,9 +1,13 @@
 package com.peluqueria.estructura.controller;
 
+import com.peluqueria.estructura.entity.Cliente;
 import com.peluqueria.estructura.entity.Factura;
 import com.peluqueria.estructura.repository.FacturaRepository;
+import com.peluqueria.estructura.service.ClienteService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,14 +25,14 @@ public class DiagnosticoController {
 
     private static final Logger logger = LoggerFactory.getLogger(DiagnosticoController.class);
     private final FacturaRepository facturaRepository;
+    private final ClienteService clienteService;
 
-    public DiagnosticoController(FacturaRepository facturaRepository) {
+    @Autowired
+    public DiagnosticoController(FacturaRepository facturaRepository, ClienteService clienteService) {
         this.facturaRepository = facturaRepository;
+        this.clienteService = clienteService;
     }
 
-    /**
-     * Endpoint para diagnosticar las facturas existentes y su estructura
-     */
     @GetMapping("/facturas")
     public ResponseEntity<?> diagnosticarFacturas(Authentication auth) {
         logger.info("Realizando diagnóstico de facturas para usuario: {}", auth.getName());
@@ -43,8 +47,6 @@ public class DiagnosticoController {
             List<Map<String, Object>> infoFacturas = todasFacturas.stream()
                     .map(factura -> {
                         Map<String, Object> info = new HashMap<>();
-
-                        // Datos básicos de la factura
                         info.put("id", factura.getId());
                         info.put("fecha", factura.getFecha());
                         info.put("total", factura.getTotal());
@@ -55,45 +57,15 @@ public class DiagnosticoController {
                             Map<String, Object> clienteInfo = new HashMap<>();
                             clienteInfo.put("id", factura.getCliente().getId());
                             clienteInfo.put("nombre", factura.getCliente().getNombre());
-
-                            // Información del usuario asociado al cliente
-                            if (factura.getCliente().getUsuario() != null) {
-                                Map<String, Object> usuarioInfo = new HashMap<>();
-                                usuarioInfo.put("id", factura.getCliente().getUsuario().getId());
-                                usuarioInfo.put("username", factura.getCliente().getUsuario().getUsername());
-                                usuarioInfo.put("email", factura.getCliente().getUsuario().getEmail());
-
-                                clienteInfo.put("usuario", usuarioInfo);
-                            } else {
-                                clienteInfo.put("usuario", null);
-                            }
+                            clienteInfo.put("tipo_referencia", factura.getCliente().getClass().getName());
 
                             info.put("cliente", clienteInfo);
                         } else {
                             info.put("cliente", null);
                         }
 
-                        // Información de los detalles
-                        if (factura.getDetalles() != null) {
-                            info.put("detalles_count", factura.getDetalles().size());
-                            info.put("tiene_productos",
-                                    factura.getDetalles().stream().anyMatch(d -> d.getProductoId() != null));
-                            info.put("tiene_servicios",
-                                    factura.getDetalles().stream().anyMatch(d -> d.getServicioId() != null));
-
-                            // Totales por tipo
-                            long cantidadProductos = factura.getDetalles().stream()
-                                    .filter(d -> d.getProductoId() != null).count();
-                            long cantidadServicios = factura.getDetalles().stream()
-                                    .filter(d -> d.getServicioId() != null).count();
-
-                            info.put("cantidad_productos", cantidadProductos);
-                            info.put("cantidad_servicios", cantidadServicios);
-                        } else {
-                            info.put("detalles_count", 0);
-                            info.put("tiene_productos", false);
-                            info.put("tiene_servicios", false);
-                        }
+                        // Detalles
+                        info.put("detalles_count", factura.getDetalles() != null ? factura.getDetalles().size() : 0);
 
                         return info;
                     })
@@ -101,36 +73,66 @@ public class DiagnosticoController {
 
             diagnostico.put("facturas", infoFacturas);
 
-            // 3. Estadísticas generales
-            long facturasConDetalles = todasFacturas.stream()
-                    .filter(f -> f.getDetalles() != null && !f.getDetalles().isEmpty())
-                    .count();
+            // 3. Diagnóstico específico para el usuario actual
+            if (auth != null) {
+                try {
+                    Cliente cliente = clienteService.findByUsuarioUsername(auth.getName());
+                    String clienteId = cliente.getId();
 
-            long facturasPendientes = todasFacturas.stream()
-                    .filter(f -> "PENDIENTE".equals(f.getEstado()))
-                    .count();
+                    Map<String, Object> diagnosticoUsuario = new HashMap<>();
+                    diagnosticoUsuario.put("username", auth.getName());
+                    diagnosticoUsuario.put("clienteId", clienteId);
 
-            long facturasPagadas = todasFacturas.stream()
-                    .filter(f -> "PAGADA".equals(f.getEstado()))
-                    .count();
+                    // Probar diferentes métodos de búsqueda
+                    List<Factura> porClienteRef = facturaRepository.findByClienteRef(clienteId);
+                    diagnosticoUsuario.put("facturas_por_clienteRef", porClienteRef.size());
 
-            Map<String, Object> estadisticas = new HashMap<>();
-            estadisticas.put("facturas_con_detalles", facturasConDetalles);
-            estadisticas.put("facturas_pendientes", facturasPendientes);
-            estadisticas.put("facturas_pagadas", facturasPagadas);
+                    List<Factura> porClienteId = facturaRepository.findByClienteId(clienteId);
+                    diagnosticoUsuario.put("facturas_por_clienteId", porClienteId.size());
 
-            diagnostico.put("estadisticas", estadisticas);
+                    List<Factura> porUsername = facturaRepository.findByClienteUsuarioUsername(auth.getName());
+                    diagnosticoUsuario.put("facturas_por_username", porUsername.size());
 
-            logger.info("Diagnóstico completado. Encontradas {} facturas", todasFacturas.size());
+                    diagnostico.put("diagnostico_usuario", diagnosticoUsuario);
+                } catch (Exception e) {
+                    diagnostico.put("error_diagnostico_usuario", e.getMessage());
+                }
+            }
+
             return ResponseEntity.ok(diagnostico);
-
         } catch (Exception e) {
-            logger.error("Error durante el diagnóstico de facturas: {}", e.getMessage(), e);
+            logger.error("Error en diagnóstico de facturas: {}", e.getMessage(), e);
+            diagnostico.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(diagnostico);
+        }
+    }
 
-            diagnostico.put("error", true);
-            diagnostico.put("mensaje", "Error al realizar el diagnóstico: " + e.getMessage());
-            diagnostico.put("tipo_error", e.getClass().getSimpleName());
+    @GetMapping("/facturas/cliente")
+    public ResponseEntity<?> diagnosticarFacturasCliente(Authentication auth) {
+        Map<String, Object> diagnostico = new HashMap<>();
+        try {
+            Cliente cliente = clienteService.findByUsuarioUsername(auth.getName());
 
+            diagnostico.put("username", auth.getName());
+            diagnostico.put("clienteId", cliente.getId());
+            diagnostico.put("clienteNombre", cliente.getNombre());
+
+            // Probar diferentes consultas
+            List<Factura> porRef = facturaRepository.findByClienteRef(cliente.getId());
+            diagnostico.put("facturas_por_clienteRef", porRef.size());
+            if (!porRef.isEmpty()) {
+                diagnostico.put("primera_factura_ref", porRef.get(0).getId());
+            }
+
+            List<Factura> porId = facturaRepository.findByClienteId(cliente.getId());
+            diagnostico.put("facturas_por_clienteId", porId.size());
+            if (!porId.isEmpty()) {
+                diagnostico.put("primera_factura_id", porId.get(0).getId());
+            }
+
+            return ResponseEntity.ok(diagnostico);
+        } catch (Exception e) {
+            diagnostico.put("error", e.getMessage());
             return ResponseEntity.status(500).body(diagnostico);
         }
     }

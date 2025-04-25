@@ -119,6 +119,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/facturacion-unificada/cliente/{clienteId}")
                         .hasAnyRole("ADMIN", "CLIENTE")
 
+                        // Rutas de diagnóstico
+                        .requestMatchers("/api/diagnostico/**").hasAnyRole("ADMIN", "CLIENTE")
+
                         // Checkout (acceso público para diagnóstico, pero endpoints restringidos)
                         .requestMatchers(HttpMethod.GET, "/api/checkout/diagnostico").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/checkout/resumen").hasAnyRole("ADMIN", "CLIENTE")
