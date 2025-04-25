@@ -1,3 +1,4 @@
+
 package com.peluqueria.estructura.config;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -15,8 +16,9 @@ public class CorsConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(CorsConfig.class);
 
-    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,https://peluqueriacanina-app.onrender.com}")
+    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,https://peluqueriacanina-app.onrender.com,https://spapets.vercel.app}")
     private String allowedOrigins;
+    
 
     @Bean
     public CorsFilter corsFilter() {
