@@ -136,7 +136,7 @@ public class CheckoutService {
      */
     @Transactional
     public Factura confirmarCheckout(Authentication auth, Map<String, String> checkoutInfo) {
-        logger.info("Confirmando checkout para usuario: {}", auth.getName());
+        logger.info("Iniciando proceso de checkout para usuario: {}", auth.getName());
 
         try {
             // Obtener el carrito
@@ -189,13 +189,34 @@ public class CheckoutService {
             // Crear la factura
             Factura factura = new Factura();
             factura.setId(UUID.randomUUID().toString());
-            factura.setCliente(cliente);
+
+            // Asigna el cliente completo, asegurándote de que incluya el usuario
+            Cliente clienteCompleto = clienteService.findByUsuarioUsername(auth.getName());
+            // Asegúrate de que el usuario esté correctamente asignado
+            if (clienteCompleto.getUsuario() == null) {
+                logger.warn("El cliente no tiene usuario asignado. Intentando obtener y asignar...");
+                Usuario usuario = usuarioRepository.findByUsername(auth.getName())
+                        .orElseGet(() -> usuarioRepository.findByEmail(auth.getName())
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuario", "username/email",
+                                        auth.getName())));
+                clienteCompleto.setUsuario(usuario);
+            }
+
+            factura.setCliente(clienteCompleto);
             factura.setFecha(LocalDateTime.now());
             factura.setEstado("PENDIENTE");
             factura.setDetalles(detalles);
 
             // Calcular totales
             factura.setTotal(carrito.getTotal());
+
+            // Log de depuración para verificar la estructura de la factura antes de
+            // guardarla
+            logger.debug("Guardando factura con ID: {}, Cliente ID: {}, Usuario: {}",
+                    factura.getId(),
+                    factura.getCliente().getId(),
+                    factura.getCliente().getUsuario() != null ? factura.getCliente().getUsuario().getUsername()
+                            : "USUARIO NULL");
 
             // Guardar la factura
             Factura facturaGuardada = facturaService.save(factura);

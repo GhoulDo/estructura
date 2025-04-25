@@ -76,7 +76,8 @@ public class FacturaController {
         logger.debug("Obteniendo facturas para cliente con username: {}", username);
 
         try {
-            List<Factura> facturas = facturaService.findByClienteUsuarioUsername(username);
+            // Usar el método más robusto que combina múltiples estrategias de búsqueda
+            List<Factura> facturas = facturaService.findAllFacturasForUser(username);
             logger.debug("Encontradas {} facturas para el cliente {}", facturas.size(), username);
             return ResponseEntity.ok(facturas);
         } catch (Exception e) {
