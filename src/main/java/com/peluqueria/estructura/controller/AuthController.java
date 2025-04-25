@@ -3,6 +3,8 @@ package com.peluqueria.estructura.controller;
 import com.peluqueria.estructura.dto.AuthRequest;
 import com.peluqueria.estructura.dto.AuthResponse;
 import com.peluqueria.estructura.dto.RegisterRequest;
+import com.peluqueria.estructura.dto.UserProfileDTO;
+import com.peluqueria.estructura.exception.ResourceNotFoundException;
 import com.peluqueria.estructura.service.AuthenticationService;
 
 import java.util.HashMap;
@@ -11,9 +13,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -65,6 +69,28 @@ public class AuthController {
         } catch (Exception e) {
             logger.error("Error durante el logout: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Error interno del servidor: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Endpoint para obtener el perfil del usuario autenticado
+     */
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> getCurrentUserProfile(Authentication authentication) {
+        logger.info("GET /api/auth/me - Usuario: {}", authentication.getName());
+
+        try {
+            UserProfileDTO userProfile = authenticationService.getCurrentUserProfile(authentication.getName());
+            return ResponseEntity.ok(userProfile);
+        } catch (ResourceNotFoundException e) {
+            logger.warn("Usuario no encontrado: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Usuario no encontrado"));
+        } catch (Exception e) {
+            logger.error("Error al obtener perfil de usuario: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al obtener perfil de usuario"));
         }
     }
 }

@@ -3,8 +3,10 @@ package com.peluqueria.estructura.service;
 import com.peluqueria.estructura.dto.AuthRequest;
 import com.peluqueria.estructura.dto.AuthResponse;
 import com.peluqueria.estructura.dto.RegisterRequest;
+import com.peluqueria.estructura.dto.UserProfileDTO;
 import com.peluqueria.estructura.entity.Cliente;
 import com.peluqueria.estructura.entity.Usuario;
+import com.peluqueria.estructura.exception.ResourceNotFoundException;
 import com.peluqueria.estructura.repository.ClienteRepository;
 import com.peluqueria.estructura.repository.UsuarioRepository;
 import com.peluqueria.estructura.security.JwtUtil;
@@ -140,5 +142,44 @@ public class AuthenticationService {
 
     public void invalidateToken(String username) {
         jwtUtil.invalidateToken(username);
+    }
+
+    /**
+     * Obtiene los datos del perfil del usuario actualmente autenticado
+     */
+    public UserProfileDTO getCurrentUserProfile(String username) {
+        logger.debug("Obteniendo perfil para el usuario: {}", username);
+
+        try {
+            Usuario usuario = usuarioRepository.findByUsername(username)
+                    .orElseGet(() -> usuarioRepository.findByEmail(username)
+                            .orElseThrow(() -> {
+                                logger.error("Usuario no encontrado con username/email: {}", username);
+                                return new ResourceNotFoundException("Usuario", "username/email", username);
+                            }));
+
+            logger.debug("Usuario encontrado: ID={}, Rol={}", usuario.getId(), usuario.getRol());
+
+            // Buscar el cliente asociado al usuario si existe
+            Cliente cliente = null;
+            try {
+                cliente = clienteRepository.findByUsuarioId(usuario.getId()).orElse(null);
+                if (cliente != null) {
+                    logger.debug("Cliente encontrado para el usuario: {} (ID: {})", cliente.getNombre(),
+                            cliente.getId());
+                }
+            } catch (Exception e) {
+                logger.warn("Error al buscar cliente para el usuario {}: {}", username, e.getMessage());
+                // No hacemos rethrow porque el perfil puede existir sin cliente
+            }
+
+            return UserProfileDTO.fromEntities(usuario, cliente);
+
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error al obtener perfil del usuario {}: {}", username, e.getMessage(), e);
+            throw new RuntimeException("Error al obtener perfil de usuario: " + e.getMessage());
+        }
     }
 }

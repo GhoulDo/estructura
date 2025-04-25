@@ -45,6 +45,9 @@ public class SecurityConfig {
                         // Rutas públicas
                         .requestMatchers("/api/auth/**", "/api/health").permitAll()
 
+                        // Ruta del perfil de usuario - requiere autenticación
+                        .requestMatchers("/api/auth/me").authenticated()
+
                         // Usuarios
                         .requestMatchers(HttpMethod.GET, "/api/usuarios/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasRole("ADMIN")
