@@ -89,6 +89,7 @@ public class SecurityConfig {
 
                         // Facturas (principal)
                         .requestMatchers(HttpMethod.GET, "/api/facturas").hasAnyRole("ADMIN", "CLIENTE")
+                        .requestMatchers(HttpMethod.GET, "/api/facturas/cliente").hasRole("CLIENTE")
                         .requestMatchers(HttpMethod.GET, "/api/facturas/{id}").hasAnyRole("ADMIN", "CLIENTE")
                         .requestMatchers(HttpMethod.POST, "/api/facturas").hasAnyRole("ADMIN", "CLIENTE")
                         .requestMatchers(HttpMethod.PUT, "/api/facturas/{id}").hasRole("ADMIN")
