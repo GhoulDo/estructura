@@ -4,6 +4,7 @@ import com.peluqueria.estructura.dto.AuthRequest;
 import com.peluqueria.estructura.dto.AuthResponse;
 import com.peluqueria.estructura.dto.RegisterRequest;
 import com.peluqueria.estructura.dto.UserProfileDTO;
+import com.peluqueria.estructura.dto.UpdateProfileRequest;
 import com.peluqueria.estructura.entity.Cliente;
 import com.peluqueria.estructura.entity.Usuario;
 import com.peluqueria.estructura.exception.ResourceNotFoundException;
@@ -180,6 +181,97 @@ public class AuthenticationService {
         } catch (Exception e) {
             logger.error("Error al obtener perfil del usuario {}: {}", username, e.getMessage(), e);
             throw new RuntimeException("Error al obtener perfil de usuario: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Actualiza el perfil del usuario autenticado
+     */
+    public UserProfileDTO updateProfile(String username, UpdateProfileRequest request) {
+        logger.debug("Actualizando perfil para usuario: {}", username);
+
+        try {
+            // Buscar el usuario por username o email
+            Usuario usuario = usuarioRepository.findByUsername(username)
+                    .orElseGet(() -> usuarioRepository.findByEmail(username)
+                            .orElseThrow(() -> {
+                                logger.error("Usuario no encontrado con username/email: {}", username);
+                                return new ResourceNotFoundException("Usuario", "username/email", username);
+                            }));
+
+            logger.debug("Usuario encontrado: ID={}", usuario.getId());
+
+            // Verificar la contraseña actual si se provee una nueva contraseña
+            if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+                if (request.getCurrentPassword() == null
+                        || !passwordEncoder.matches(request.getCurrentPassword(), usuario.getPassword())) {
+                    logger.warn("Contraseña actual incorrecta al intentar cambiar contraseña para usuario: {}",
+                            username);
+                    throw new IllegalArgumentException("La contraseña actual es incorrecta");
+                }
+
+                usuario.setPassword(passwordEncoder.encode(request.getPassword()));
+                logger.debug("Contraseña actualizada para el usuario: {}", username);
+            }
+
+            // Actualizar email si cambió y no está en uso por otro usuario
+            if (request.getEmail() != null && !request.getEmail().equals(usuario.getEmail())) {
+                if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
+                    logger.warn("Intento de actualizar a un email ya existente: {}", request.getEmail());
+                    throw new IllegalArgumentException("El email ya está en uso por otro usuario");
+                }
+                usuario.setEmail(request.getEmail());
+            }
+
+            // Actualizar username si cambió y no está en uso por otro usuario
+            if (request.getUsername() != null && !request.getUsername().equals(usuario.getUsername())) {
+                if (usuarioRepository.existsByUsername(request.getUsername())) {
+                    logger.warn("Intento de actualizar a un username ya existente: {}", request.getUsername());
+                    throw new IllegalArgumentException("El nombre de usuario ya está en uso");
+                }
+                usuario.setUsername(request.getUsername());
+            }
+
+            // Guardar los cambios del usuario
+            usuario = usuarioRepository.save(usuario);
+
+            // Buscar y actualizar la información del cliente si existe
+            Cliente cliente = null;
+            try {
+                cliente = clienteRepository.findByUsuarioId(usuario.getId()).orElse(null);
+                if (cliente != null) {
+                    logger.debug("Cliente encontrado para actualizar: ID={}", cliente.getId());
+
+                    // Actualizar campos del cliente
+                    if (request.getNombre() != null) {
+                        cliente.setNombre(request.getNombre());
+                    }
+                    if (request.getTelefono() != null) {
+                        cliente.setTelefono(request.getTelefono());
+                    }
+                    if (request.getDireccion() != null) {
+                        cliente.setDireccion(request.getDireccion());
+                    }
+
+                    // Asegurarse de que el email del cliente esté sincronizado con el del usuario
+                    cliente.setEmail(usuario.getEmail());
+
+                    cliente = clienteRepository.save(cliente);
+                    logger.debug("Cliente actualizado exitosamente");
+                }
+            } catch (Exception e) {
+                logger.warn("Error al intentar actualizar cliente para el usuario {}: {}", username, e.getMessage());
+                // No hacemos rethrow porque el perfil puede actualizarse sin actualizar el
+                // cliente
+            }
+
+            logger.info("Perfil actualizado exitosamente para el usuario: {}", username);
+            return UserProfileDTO.fromEntities(usuario, cliente);
+        } catch (ResourceNotFoundException | IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error al actualizar perfil del usuario {}: {}", username, e.getMessage(), e);
+            throw new RuntimeException("Error al actualizar perfil: " + e.getMessage());
         }
     }
 }

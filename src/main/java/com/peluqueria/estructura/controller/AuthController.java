@@ -4,6 +4,7 @@ import com.peluqueria.estructura.dto.AuthRequest;
 import com.peluqueria.estructura.dto.AuthResponse;
 import com.peluqueria.estructura.dto.RegisterRequest;
 import com.peluqueria.estructura.dto.UserProfileDTO;
+import com.peluqueria.estructura.dto.UpdateProfileRequest;
 import com.peluqueria.estructura.exception.ResourceNotFoundException;
 import com.peluqueria.estructura.service.AuthenticationService;
 
@@ -19,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -91,6 +93,36 @@ public class AuthController {
             logger.error("Error al obtener perfil de usuario: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error al obtener perfil de usuario"));
+        }
+    }
+
+    /**
+     * Endpoint para actualizar el perfil del usuario autenticado
+     */
+    @PutMapping("/update-profile")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> updateProfile(
+            Authentication authentication,
+            @RequestBody UpdateProfileRequest updateRequest) {
+
+        logger.info("PUT /api/auth/update-profile - Usuario: {}", authentication.getName());
+
+        try {
+            UserProfileDTO updatedProfile = authenticationService.updateProfile(
+                    authentication.getName(), updateRequest);
+
+            return ResponseEntity.ok(updatedProfile);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Error de validación al actualizar perfil: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (ResourceNotFoundException e) {
+            logger.warn("Error al actualizar perfil - recurso no encontrado: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Usuario no encontrado"));
+        } catch (Exception e) {
+            logger.error("Error al actualizar perfil: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al actualizar perfil de usuario"));
         }
     }
 }
